@@ -1,0 +1,638 @@
+/* ============================================================
+   STREAMFINDER – STYLE.CSS
+   Charte : Bleu Royal (#1E40AF) | Blanc Pur (#FFFFFF)
+   Police  : Inter (Google Fonts)
+   Layout  : Flexbox + CSS Grid | Responsive (Laptop + Tablette + Mobile)
+============================================================ */
+
+/* ================================
+   1. RESET & VARIABLES CSS
+================================ */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  /* Palette principale */
+  --blue-900:   #1E3A5F;
+  --blue-800:   #1E40AF;   /* Couleur principale */
+  --blue-700:   #1D4ED8;
+  --blue-600:   #2563EB;
+  --blue-500:   #3B82F6;
+  --blue-400:   #60A5FA;
+  --blue-300:   #93C5FD;
+  --blue-200:   #BFDBFE;
+  --blue-100:   #DBEAFE;
+  --blue-50:    #EFF6FF;
+  --blue-light: #F0F4F8;   /* Fond clair */
+
+  --white:      #FFFFFF;
+  --text-dark:  #1E293B;   /* Bleu nuit profond */
+  --text-mid:   #475569;
+  --text-light: #64748B;
+  --border:     #E2E8F0;
+
+  /* Ombres */
+  --shadow-sm:  0 1px 3px rgba(30,64,175,.08);
+  --shadow-md:  0 4px 16px rgba(30,64,175,.13);
+  --shadow-lg:  0 8px 32px rgba(30,64,175,.18);
+  --shadow-xl:  0 16px 48px rgba(30,64,175,.22);
+
+  /* Couleur MonCash */
+  --moncash-red:    #E3000B;
+  --moncash-orange: #FF6B00;
+  --moncash-dark:   #1A1A2E;
+
+  /* Typographie */
+  --font: 'Inter', system-ui, sans-serif;
+
+  /* Rayon */
+  --r-sm:   8px;
+  --r-md:   12px;
+  --r-lg:   20px;
+  --r-full: 9999px;
+
+  /* Transitions */
+  --t:      all 0.25s cubic-bezier(0.4,0,0.2,1);
+  --t-slow: all 0.4s  cubic-bezier(0.4,0,0.2,1);
+}
+
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+
+body {
+  font-family: var(--font);
+  color: var(--text-dark);
+  background: var(--white);
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+a { text-decoration: none; color: inherit; }
+ul { list-style: none; }
+button { cursor: pointer; border: none; background: none; font-family: var(--font); }
+
+/* ================================
+   2. UTILITAIRES
+================================ */
+.container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+.sr-only { position: absolute; width: 1px; height: 1px; clip: rect(0,0,0,0); overflow: hidden; }
+
+/* ================================
+   3. BOUTONS
+================================ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 26px;
+  border-radius: var(--r-full);
+  font-weight: 700;
+  font-size: .9rem;
+  letter-spacing: .01em;
+  transition: var(--t);
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: var(--blue-800);
+  color: var(--white);
+  box-shadow: 0 4px 14px rgba(30,64,175,.3);
+}
+.btn-primary:hover { background: var(--blue-700); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(30,64,175,.45); }
+.btn-primary:active { transform: translateY(0); }
+
+.btn-lg { padding: 16px 32px; font-size: 1rem; }
+
+.btn-outline {
+  background: transparent;
+  color: var(--text-mid);
+  border: 2px solid var(--border);
+}
+.btn-outline:hover { border-color: var(--blue-400); color: var(--blue-800); }
+
+.btn-outline-sm {
+  padding: 7px 16px;
+  border-radius: var(--r-full);
+  border: 2px solid var(--border);
+  color: var(--text-mid);
+  font-weight: 600;
+  font-size: .82rem;
+  transition: var(--t);
+}
+.btn-outline-sm:hover { border-color: var(--blue-400); color: var(--blue-800); background: var(--blue-50); }
+
+.btn-full { width: 100%; }
+
+/* Bouton MonCash */
+.btn-moncash {
+  background: linear-gradient(135deg, var(--moncash-red), var(--moncash-orange));
+  color: var(--white);
+  font-size: 1rem;
+  font-weight: 800;
+  padding: 16px 24px;
+  border-radius: var(--r-full);
+  box-shadow: 0 6px 20px rgba(227,0,11,.35);
+  transition: var(--t);
+  gap: 10px;
+}
+.btn-moncash:hover { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(227,0,11,.45); }
+.btn-moncash:active { transform: translateY(0); }
+.moncash-btn-icon {
+  width: 28px; height: 28px;
+  background: var(--white);
+  color: var(--moncash-red);
+  border-radius: 50%;
+  font-weight: 900;
+  font-size: .9rem;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ================================
+   4. HEADER
+================================ */
+.site-header {
+  position: sticky; top: 0; z-index: 1000;
+  background: rgba(255,255,255,.97);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: var(--shadow-sm);
+}
+.header-inner {
+  display: flex; align-items: center;
+  gap: 20px; height: 68px;
+}
+.logo {
+  display: flex; align-items: center; gap: 8px;
+  flex-shrink: 0;
+}
+.logo-icon {
+  width: 34px; height: 34px;
+  background: var(--blue-800); color: var(--white);
+  border-radius: var(--r-sm);
+  display: flex; align-items: center; justify-content: center;
+  font-size: .95rem; font-weight: 900; flex-shrink: 0;
+}
+.logo-text { font-size: 1.2rem; font-weight: 800; color: var(--text-dark); letter-spacing: -.03em; }
+.logo-accent { color: var(--blue-800); }
+
+.header-right { display: flex; align-items: center; gap: 12px; margin-left: auto; }
+
+.user-info {
+  display: flex; align-items: center; gap: 10px;
+}
+.user-avatar {
+  width: 34px; height: 34px;
+  background: var(--blue-800); color: var(--white);
+  border-radius: 50%; font-weight: 700; font-size: .9rem;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.user-name {
+  font-size: .88rem; font-weight: 600; color: var(--text-dark);
+  max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* Barre de recherche */
+.search-wrapper { position: relative; flex: 0 1 320px; }
+.search-input {
+  width: 100%;
+  padding: 10px 18px 10px 42px;
+  border: 2px solid var(--border);
+  border-radius: var(--r-full);
+  font-family: var(--font); font-size: .9rem; color: var(--text-dark);
+  background: var(--blue-50);
+  transition: var(--t); outline: none;
+}
+.search-input:focus { border-color: var(--blue-500); background: var(--white); box-shadow: 0 0 0 3px rgba(59,130,246,.15); }
+.search-input::placeholder { color: var(--text-light); }
+.search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 1rem; pointer-events: none; }
+
+/* ================================
+   5. HERO (Page d'accueil)
+================================ */
+.hero {
+  position: relative;
+  background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 45%, #BFDBFE 100%);
+  padding: 80px 0 90px;
+  overflow: hidden;
+}
+.hero-bg-shapes { position: absolute; inset: 0; pointer-events: none; }
+.shape { position: absolute; border-radius: 50%; opacity: .16; animation: float 8s ease-in-out infinite; }
+.shape-1 { width: 420px; height: 420px; background: var(--blue-500); top: -160px; right: -100px; animation-delay: 0s; }
+.shape-2 { width: 260px; height: 260px; background: var(--blue-700); bottom: -80px; left: -60px; animation-delay: 3s; }
+.shape-3 { width: 190px; height: 190px; background: var(--blue-400); top: 40%; left: 38%; animation-delay: 5.5s; }
+@keyframes float { 0%,100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-18px) scale(1.04); } }
+
+.hero-content { position: relative; z-index: 1; text-align: center; max-width: 780px; margin: 0 auto; }
+
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--white); color: var(--blue-800);
+  font-weight: 700; font-size: .8rem; letter-spacing: .05em; text-transform: uppercase;
+  padding: 7px 18px; border-radius: var(--r-full);
+  border: 1.5px solid var(--blue-200); box-shadow: var(--shadow-sm);
+  margin-bottom: 28px;
+}
+
+.hero-title {
+  font-size: clamp(1.9rem, 5vw, 3.4rem);
+  font-weight: 900; line-height: 1.12;
+  color: var(--text-dark); letter-spacing: -.04em;
+  margin-bottom: 20px;
+}
+.hero-title .highlight {
+  color: var(--blue-800);
+  background: linear-gradient(135deg, var(--blue-700), var(--blue-500));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.hero-subtitle {
+  font-size: 1.08rem; color: var(--text-mid); max-width: 560px;
+  margin: 0 auto 36px; line-height: 1.7;
+}
+.hero-perks {
+  display: flex; gap: 24px; justify-content: center; flex-wrap: wrap;
+}
+.perk {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--white); border: 1.5px solid var(--blue-200);
+  border-radius: var(--r-full); padding: 8px 18px;
+  font-size: .88rem; font-weight: 600; color: var(--text-dark);
+  box-shadow: var(--shadow-sm);
+}
+.perk-icon { font-size: 1rem; }
+
+/* ================================
+   6. SECTION ENREGISTREMENT
+================================ */
+.register-section { padding: 80px 0 96px; background: var(--blue-light); }
+
+.register-wrapper {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 64px; align-items: start;
+  background: var(--white); border-radius: var(--r-lg);
+  padding: 56px 48px; box-shadow: var(--shadow-xl);
+  border: 2px solid var(--blue-100);
+}
+
+.register-pitch-title {
+  font-size: 1.7rem; font-weight: 900;
+  color: var(--text-dark); letter-spacing: -.03em;
+  margin-bottom: 14px;
+}
+.register-pitch p { color: var(--text-mid); line-height: 1.7; margin-bottom: 24px; }
+.register-benefits { display: flex; flex-direction: column; gap: 12px; }
+.register-benefits li { font-size: .92rem; font-weight: 600; color: var(--text-dark); }
+
+/* Formulaire d'inscription */
+.register-form { display: flex; flex-direction: column; gap: 20px; }
+.form-card-title { font-size: 1.1rem; font-weight: 800; color: var(--blue-800); margin-bottom: 4px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-label { font-size: .87rem; font-weight: 700; color: var(--text-dark); }
+.required { color: var(--blue-700); }
+
+.form-input {
+  padding: 12px 16px; border: 2px solid var(--border);
+  border-radius: var(--r-md); font-family: var(--font);
+  font-size: .92rem; color: var(--text-dark); background: var(--white);
+  transition: var(--t); outline: none; width: 100%;
+}
+.form-input:focus { border-color: var(--blue-500); box-shadow: 0 0 0 3px rgba(59,130,246,.15); }
+.form-input.error { border-color: #ef4444 !important; }
+.form-input::placeholder { color: var(--text-light); }
+.form-error { font-size: .8rem; color: #ef4444; font-weight: 500; min-height: 18px; }
+
+.phone-wrapper { display: flex; align-items: stretch; gap: 0; }
+.phone-prefix {
+  padding: 12px 14px;
+  background: var(--blue-50); border: 2px solid var(--border);
+  border-right: none; border-radius: var(--r-md) 0 0 var(--r-md);
+  font-weight: 700; font-size: .88rem; color: var(--blue-800);
+  white-space: nowrap; display: flex; align-items: center;
+}
+.phone-input { border-radius: 0 var(--r-md) var(--r-md) 0 !important; flex: 1; }
+
+.form-legal { font-size: .78rem; color: var(--text-light); line-height: 1.5; text-align: center; }
+.form-legal a { color: var(--blue-700); font-weight: 600; }
+
+/* ================================
+   7. SECTION BIENVENUE & FILTRES
+================================ */
+.welcome-banner {
+  background: linear-gradient(135deg, var(--blue-800) 0%, var(--blue-600) 100%);
+  padding: 32px 0;
+}
+.welcome-inner {
+  display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap;
+}
+.welcome-title { font-size: 1.5rem; font-weight: 900; color: var(--white); margin-bottom: 6px; letter-spacing: -.02em; }
+.welcome-name-highlight { color: var(--blue-200); }
+.welcome-banner p { font-size: .92rem; color: var(--blue-200); }
+.welcome-badge {
+  display: flex; align-items: center; gap: 12px;
+  background: rgba(255,255,255,.15); backdrop-filter: blur(8px);
+  border: 1.5px solid rgba(255,255,255,.25);
+  border-radius: var(--r-lg); padding: 14px 24px;
+  color: var(--white); font-size: .88rem;
+}
+.welcome-badge strong { font-size: 1.8rem; font-weight: 900; display: block; line-height: 1; }
+.badge-icon { font-size: 2rem; }
+
+.filters-section { padding: 24px 0 16px; background: var(--white); border-bottom: 1px solid var(--border); }
+.filter-bar { display: flex; gap: 10px; flex-wrap: wrap; }
+.filter-btn {
+  padding: 9px 20px; border-radius: var(--r-full);
+  font-family: var(--font); font-size: .85rem; font-weight: 600;
+  color: var(--text-mid); background: var(--blue-50);
+  border: 2px solid transparent; transition: var(--t);
+}
+.filter-btn:hover { color: var(--blue-800); border-color: var(--blue-300); background: var(--blue-100); }
+.filter-btn.active { background: var(--blue-800); color: var(--white); border-color: var(--blue-800); box-shadow: 0 4px 12px rgba(30,64,175,.3); }
+.search-info { font-size: .85rem; color: var(--text-mid); margin-top: 12px; font-weight: 500; min-height: 22px; }
+
+/* ================================
+   8. GRILLE DES FILMS
+================================ */
+.catalogue-section { padding: 40px 0 80px; background: var(--white); }
+
+.movies-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 28px;
+}
+
+/* Carte Film */
+.movie-card {
+  background: var(--white); border-radius: var(--r-lg);
+  border: 1.5px solid var(--border); box-shadow: var(--shadow-sm);
+  overflow: hidden; display: flex; flex-direction: column;
+  transition: var(--t-slow);
+  animation: cardIn .4s ease both;
+}
+@keyframes cardIn { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+.movie-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-xl); border-color: var(--blue-300); }
+
+/* Affiche colorée dynamique */
+.movie-poster {
+  height: 190px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-size: 4.5rem; position: relative; overflow: hidden;
+}
+.movie-poster::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,.4) 0%, transparent 55%);
+}
+.movie-badge-year {
+  position: absolute; top: 12px; left: 12px; z-index: 1;
+  background: rgba(30,64,175,.85); color: var(--white);
+  font-size: .75rem; font-weight: 700; padding: 4px 10px; border-radius: var(--r-full);
+}
+.movie-badge-rating {
+  position: absolute; top: 12px; right: 12px; z-index: 1;
+  background: rgba(255,255,255,.92); color: var(--text-dark);
+  font-size: .75rem; font-weight: 800; padding: 4px 10px; border-radius: var(--r-full);
+}
+
+.movie-body { padding: 20px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+.movie-genre-tag {
+  display: inline-flex; width: fit-content;
+  font-size: .73rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+  padding: 4px 10px; border-radius: var(--r-full);
+  background: var(--blue-50); color: var(--blue-700); border: 1px solid var(--blue-100);
+}
+.movie-title { font-size: 1.05rem; font-weight: 800; color: var(--text-dark); letter-spacing: -.02em; line-height: 1.3; }
+.movie-desc { font-size: .83rem; color: var(--text-light); line-height: 1.55; flex: 1; }
+
+/* Bouton "Où regarder" avec MonCash */
+.btn-watch {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  padding: 13px 16px; margin-top: 6px;
+  background: linear-gradient(135deg, var(--moncash-red), var(--moncash-orange));
+  color: var(--white); border-radius: var(--r-full);
+  font-family: var(--font); font-size: .87rem; font-weight: 800;
+  box-shadow: 0 4px 14px rgba(227,0,11,.28); transition: var(--t);
+  cursor: pointer; border: none; width: 100%;
+}
+.btn-watch:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(227,0,11,.4); }
+.btn-watch-logo {
+  width: 22px; height: 22px; background: var(--white);
+  border-radius: 50%; font-weight: 900; font-size: .75rem; color: var(--moncash-red);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+
+/* No results */
+.no-results { text-align: center; padding: 64px 24px; color: var(--text-mid); }
+.no-results-icon { font-size: 3.5rem; margin-bottom: 14px; }
+.no-results h3 { font-size: 1.25rem; font-weight: 700; color: var(--text-dark); margin-bottom: 8px; }
+
+/* ================================
+   9. MODAL (base)
+================================ */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 9000;
+  background: rgba(15,23,42,.75);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+  animation: fadeIn .25s ease;
+}
+.modal-overlay[hidden] { display: none; }
+@keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+
+.modal-box {
+  background: var(--white); border-radius: var(--r-lg);
+  padding: 40px 36px; max-width: 460px; width: 100%;
+  position: relative; box-shadow: var(--shadow-xl);
+  animation: slideUp .3s cubic-bezier(0.4,0,0.2,1);
+  max-height: 90vh; overflow-y: auto;
+}
+@keyframes slideUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
+
+.modal-close {
+  position: absolute; top: 14px; right: 14px;
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--blue-50); color: var(--text-mid);
+  font-size: 1rem; display: flex; align-items: center; justify-content: center;
+  transition: var(--t);
+}
+.modal-close:hover { background: var(--blue-100); color: var(--text-dark); }
+
+.modal-title { font-size: 1.4rem; font-weight: 900; color: var(--text-dark); text-align: center; margin-bottom: 8px; }
+.modal-subtitle { font-size: .92rem; color: var(--text-mid); text-align: center; margin-bottom: 24px; }
+
+/* ================================
+   10. MODAL MONCASH (styles spécifiques)
+================================ */
+.moncash-modal { padding: 0; overflow: hidden; }
+
+.moncash-header {
+  background: var(--moncash-dark);
+  padding: 22px 28px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.moncash-logo { display: flex; align-items: center; gap: 10px; }
+.moncash-logo-icon {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--moncash-red), var(--moncash-orange));
+  color: var(--white); font-weight: 900; font-size: 1.1rem;
+  display: flex; align-items: center; justify-content: center;
+}
+.moncash-logo-text { font-size: 1.1rem; font-weight: 700; color: var(--white); }
+.moncash-logo-text strong { color: var(--moncash-orange); }
+.moncash-secure-badge {
+  font-size: .75rem; font-weight: 600;
+  color: rgba(255,255,255,.7);
+  background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2);
+  padding: 4px 12px; border-radius: var(--r-full);
+}
+
+/* Corps de la modale MonCash */
+.moncash-modal > *:not(.moncash-header) { padding-left: 28px; padding-right: 28px; }
+
+.moncash-film-info {
+  display: flex; align-items: center; gap: 16px;
+  padding: 20px 28px; background: var(--blue-50);
+  border-bottom: 1px solid var(--blue-100);
+}
+.moncash-film-emoji { font-size: 2.4rem; }
+.moncash-film-label { font-size: .78rem; font-weight: 600; color: var(--text-light); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 2px; }
+.moncash-film-title { font-size: 1rem; font-weight: 800; color: var(--text-dark); }
+
+.moncash-amount-box {
+  background: linear-gradient(135deg, var(--moncash-red), var(--moncash-orange));
+  padding: 22px 28px; text-align: center; margin: 0;
+}
+.moncash-amount-label { font-size: .8rem; font-weight: 600; color: rgba(255,255,255,.8); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
+.moncash-amount-value { font-size: 2.8rem; font-weight: 900; color: var(--white); line-height: 1; }
+.moncash-currency { font-size: 1.4rem; font-weight: 700; }
+.moncash-amount-sub { font-size: .8rem; color: rgba(255,255,255,.75); margin-top: 4px; }
+
+.moncash-modal .form-group { padding-top: 24px; padding-bottom: 0; }
+.moncash-modal .form-group { padding-left: 28px; padding-right: 28px; }
+
+/* Overrides pour les éléments avec padding custom */
+.moncash-modal > .form-group { padding: 24px 28px 0; }
+
+.moncash-instructions {
+  padding: 16px 28px;
+  background: var(--blue-50); border: 1px solid var(--blue-100);
+  border-radius: var(--r-md); margin: 16px 28px;
+}
+.moncash-instructions h4 { font-size: .88rem; font-weight: 700; color: var(--text-dark); margin-bottom: 10px; }
+.moncash-instructions ol { padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+.moncash-instructions li { font-size: .83rem; color: var(--text-mid); }
+
+.moncash-modal .btn-moncash { margin: 0 28px; width: calc(100% - 56px); }
+
+.moncash-alt-links { padding: 16px 28px 24px; text-align: center; }
+.moncash-alt-text { font-size: .8rem; color: var(--text-light); margin-bottom: 8px; }
+.moncash-external-link { font-size: .85rem; font-weight: 700; color: var(--blue-700); text-decoration: underline; }
+
+/* ================================
+   11. MODAL RÉSULTAT (après paiement)
+================================ */
+.result-modal { text-align: center; }
+.result-success-icon { font-size: 3.5rem; margin-bottom: 12px; }
+.result-platforms { display: flex; flex-direction: column; gap: 12px; margin: 24px 0; }
+.result-platform-link {
+  display: flex; align-items: center; gap: 16px;
+  padding: 16px 20px; border-radius: var(--r-md);
+  border: 2px solid var(--border); text-decoration: none;
+  color: var(--text-dark); font-weight: 700; font-size: .95rem;
+  transition: var(--t);
+}
+.result-platform-link:hover { border-color: var(--blue-400); background: var(--blue-50); transform: translateX(4px); }
+.result-platform-icon {
+  width: 42px; height: 42px; border-radius: var(--r-sm);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 900; font-size: 1rem; color: white; flex-shrink: 0;
+}
+.result-platform-details { text-align: left; }
+.result-platform-details small { display: block; font-size: .78rem; font-weight: 500; color: var(--text-light); }
+.result-arrow { margin-left: auto; font-size: 1.1rem; color: var(--text-light); }
+.result-legal { font-size: .8rem; color: var(--text-light); padding: 12px 0 20px; line-height: 1.5; }
+
+/* ================================
+   12. FOOTER
+================================ */
+.site-footer { background: var(--blue-900); padding: 32px 0; }
+.footer-inner { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+.footer-logo { display: flex; align-items: center; gap: 8px; }
+.footer-logo .logo-text { color: var(--white); font-size: 1.05rem; }
+.footer-logo .logo-accent { color: var(--blue-300); }
+.footer-logo .logo-icon { background: var(--blue-700); font-size: .85rem; }
+.footer-copy { font-size: .82rem; color: var(--blue-300); }
+.footer-links { display: flex; gap: 18px; }
+.footer-links a { font-size: .83rem; color: var(--blue-300); font-weight: 500; transition: var(--t); }
+.footer-links a:hover { color: var(--white); }
+
+/* ================================
+   13. TOAST
+================================ */
+.toast {
+  position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(100px);
+  background: var(--text-dark); color: var(--white);
+  padding: 14px 28px; border-radius: var(--r-full);
+  font-size: .9rem; font-weight: 600; z-index: 9999;
+  box-shadow: var(--shadow-xl); transition: transform .4s cubic-bezier(0.4,0,0.2,1), opacity .4s;
+  opacity: 0; pointer-events: none; white-space: nowrap;
+}
+.toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+/* ================================
+   14. RESPONSIVE – TABLETTE (≤ 900px)
+================================ */
+@media (max-width: 900px) {
+  /* Registration */
+  .register-wrapper {
+    grid-template-columns: 1fr;
+    gap: 36px; padding: 36px 28px;
+  }
+
+  /* Films grid */
+  .movies-grid { grid-template-columns: repeat(2, 1fr); gap: 20px; }
+
+  /* Header search smaller */
+  .search-wrapper { flex: 0 1 220px; }
+  .user-name { display: none; }
+}
+
+/* ================================
+   15. RESPONSIVE – MOBILE (≤ 600px)
+================================ */
+@media (max-width: 600px) {
+  .hero { padding: 52px 0 60px; }
+  .hero-perks { flex-direction: column; align-items: center; gap: 10px; }
+
+  .register-section { padding: 40px 0 60px; }
+  .register-wrapper { padding: 28px 20px; gap: 28px; }
+  .form-row { grid-template-columns: 1fr; }
+  .register-pitch-title { font-size: 1.3rem; }
+
+  .search-wrapper { display: none; }
+  .welcome-title { font-size: 1.2rem; }
+
+  .movies-grid { grid-template-columns: 1fr; }
+
+  .modal-box { padding: 28px 22px; }
+  .moncash-modal .btn-moncash { margin: 0 20px; width: calc(100% - 40px); }
+  .moncash-modal > .form-group { padding: 20px 20px 0; }
+  .moncash-instructions { margin: 14px 20px; }
+  .moncash-alt-links { padding: 12px 20px 20px; }
+
+  .footer-inner { flex-direction: column; text-align: center; }
+}
+
+/* ================================
+   16. ACCESSIBILITÉ
+================================ */
+:focus-visible { outline: 3px solid var(--blue-500); outline-offset: 2px; border-radius: 4px; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}

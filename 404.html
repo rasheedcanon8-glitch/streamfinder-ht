@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Page introuvable (404) – StreamFinder</title>
+  <meta name="robots" content="noindex, follow" />
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+
+  <!-- Script de redirection automatique après 10 secondes -->
+  <script>
+    let countdown = 10;
+    window.onload = function() {
+      const timer = setInterval(function() {
+        countdown--;
+        const el = document.getElementById('countdown');
+        if (el) el.textContent = countdown;
+        if (countdown <= 0) {
+          clearInterval(timer);
+          window.location.href = './index.html';
+        }
+      }, 1000);
+    };
+  </script>
+
+  <style>
+    /* Variables */
+    :root {
+      --blue-800: #1E40AF;
+      --blue-700: #1D4ED8;
+      --blue-500: #3B82F6;
+      --blue-100: #DBEAFE;
+      --blue-50:  #EFF6FF;
+      --text-dark: #1E293B;
+      --text-mid:  #475569;
+      --white: #FFFFFF;
+      --font: 'Inter', system-ui, sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font);
+      background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 50%, #BFDBFE 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      color: var(--text-dark);
+    }
+
+    /* Card principale */
+    .error-card {
+      background: var(--white);
+      border-radius: 24px;
+      padding: 56px 48px;
+      max-width: 520px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 16px 48px rgba(30, 64, 175, 0.18);
+      border: 2px solid rgba(30, 64, 175, 0.1);
+      animation: slideUp 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Logo */
+    .logo {
+      display: flex; align-items: center; justify-content: center;
+      gap: 10px; margin-bottom: 36px;
+    }
+    .logo-icon {
+      width: 38px; height: 38px;
+      background: var(--blue-800); color: var(--white);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; font-weight: 900;
+    }
+    .logo-text { font-size: 1.3rem; font-weight: 800; color: var(--text-dark); letter-spacing: -0.03em; }
+    .logo-accent { color: var(--blue-800); }
+
+    /* Code 404 animé */
+    .error-code {
+      font-size: clamp(5rem, 15vw, 8rem);
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: -0.06em;
+      background: linear-gradient(135deg, var(--blue-800), var(--blue-500));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 16px;
+      animation: pulse 3s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.75; }
+    }
+
+    .error-emoji { font-size: 3rem; margin-bottom: 16px; display: block; }
+
+    .error-title {
+      font-size: 1.5rem; font-weight: 800;
+      color: var(--text-dark); margin-bottom: 12px;
+      letter-spacing: -0.02em;
+    }
+    .error-desc {
+      font-size: 0.95rem; color: var(--text-mid);
+      line-height: 1.7; margin-bottom: 32px;
+    }
+
+    /* Compteur de redirection */
+    .redirect-info {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--blue-50); border: 1.5px solid var(--blue-100);
+      border-radius: 999px; padding: 8px 20px;
+      font-size: 0.85rem; color: var(--blue-800); font-weight: 600;
+      margin-bottom: 28px;
+    }
+    .countdown-badge {
+      background: var(--blue-800); color: var(--white);
+      width: 26px; height: 26px; border-radius: 50%;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 0.85rem; font-weight: 800;
+    }
+
+    /* Bouton retour */
+    .btn-home {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 14px 32px; background: var(--blue-800); color: var(--white);
+      border-radius: 999px; font-family: var(--font);
+      font-size: 1rem; font-weight: 700; text-decoration: none;
+      box-shadow: 0 4px 14px rgba(30, 64, 175, 0.35);
+      transition: all 0.25s ease; cursor: pointer;
+      width: 100%; border: none;
+    }
+    .btn-home:hover {
+      background: var(--blue-700);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(30, 64, 175, 0.45);
+    }
+
+    /* Suggestions de liens */
+    .quick-links {
+      display: flex; gap: 12px; justify-content: center;
+      flex-wrap: wrap; margin-top: 20px;
+    }
+    .quick-link {
+      font-size: 0.83rem; font-weight: 600; color: var(--blue-700);
+      text-decoration: underline;
+    }
+    .quick-link:hover { color: var(--blue-800); }
+
+    /* Footer */
+    .error-footer {
+      margin-top: 36px; font-size: 0.8rem; color: var(--text-mid); text-align: center;
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      .error-card { padding: 36px 24px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="error-card">
+
+    <!-- Logo -->
+    <div class="logo">
+      <div class="logo-icon">▶</div>
+      <span class="logo-text">Stream<span class="logo-accent">Finder</span></span>
+    </div>
+
+    <!-- Code d'erreur -->
+    <div class="error-code" aria-label="Erreur 404">404</div>
+    <span class="error-emoji" aria-hidden="true">🎬</span>
+
+    <h1 class="error-title">Page introuvable</h1>
+    <p class="error-desc">
+      Oups ! La page que vous cherchez n'existe pas ou a été déplacée.
+      Vérifiez l'adresse URL ou retournez à l'accueil pour continuer
+      à découvrir où regarder vos films légalement.
+    </p>
+
+    <!-- Compteur de redirection automatique -->
+    <div class="redirect-info" aria-live="polite">
+      <span>Redirection automatique dans</span>
+      <span class="countdown-badge" id="countdown">10</span>
+      <span>secondes</span>
+    </div>
+
+    <!-- Bouton de retour -->
+    <a href="./index.html" class="btn-home" id="btn-back-home">
+      🏠 Retour à l'accueil StreamFinder
+    </a>
+
+    <!-- Liens rapides -->
+    <div class="quick-links">
+      <a href="./index.html" class="quick-link" id="ql-accueil">Accueil</a>
+      <a href="./index.html#catalogue" class="quick-link" id="ql-catalogue">Catalogue</a>
+    </div>
+
+  </div>
+
+  <!-- Pied de page -->
+  <p class="error-footer">
+    © <script>document.write(new Date().getFullYear())</script> StreamFinder.
+    Guide de streaming légal.
+  </p>
+
+</body>
+</html>
