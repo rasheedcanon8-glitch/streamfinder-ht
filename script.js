@@ -685,7 +685,7 @@ async function initierTransactionDexchange(telClient) {
    🔒 Anti-fraude : Débloque le lien de streaming UNIQUEMENT si le statut est "PAID"
 ============================================================ */
 async function verifierStatutTransaction(transactionId) {
-  const maxAttempts = 60; // 5 minutes max
+  const maxAttempts = 100; // 5 minutes max (toutes les 3 secondes)
   let attempt = 0;
 
   while (attempt < maxAttempts) {
@@ -732,8 +732,8 @@ async function verifierStatutTransaction(transactionId) {
       console.warn("[Verification Status Polling]", err.message);
     }
 
-    // Attendre 5 secondes avant la prochaine requête
-    await new Promise(resolve => setTimeout(resolve, 5000));
+    // Attendre 3 secondes avant la prochaine requête
+    await new Promise(resolve => setTimeout(resolve, 3000));
   }
 
   // Timeout dépassé
