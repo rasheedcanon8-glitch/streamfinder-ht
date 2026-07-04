@@ -12,13 +12,23 @@
 'use strict';
 
 /* ============================================================
-   CONFIGURATION MARCHANDE (NE PAS MODIFIER)
+   CONFIGURATION DE L'API DEXCHANGE / MONCASH (Production)
 ============================================================ */
-const MERCHANT_CONFIG = {
-  numero:   '38086319',        // Numéro MonCash marchand (+509 38 08 63 19)
-  montant:  500,               // 500 HTG
-  nom:      'StreamFinder',
-  prefixe:  '+509'
+const DEXCHANGE_CONFIG = {
+  // Mode Live / Production (Live API Credentials)
+  MERCHANT_KEY:    'VOTRE_MERCHANT_KEY_PRODUCTION_ICI', // Clé Marchand Dexchange
+  CLIENT_ID:       'VOTRE_CLIENT_ID_PRODUCTION_ICI',    // Client ID Dexchange
+  SECRET_KEY:      'VOTRE_SECRET_KEY_PRODUCTION_ICI',   // Secret Key Dexchange
+  RSA_PUBLIC_KEY:  `-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAv1vV...
+VOTRE_CLE_PUBLIQUE_RSA_PRODUCTION_COMPLETE_ICI
+-----END PUBLIC KEY-----`,
+  
+  // Compte Marchand de réception (+509 38 08 63 19)
+  MERCHANT_PHONE:  '+50938086319', 
+  API_URL:         'https://api.dexchangeout.com/api/v1', // URL de Production Dexchange
+  CURRENCY:        'HTG',
+  AMOUNT:          500
 };
 
 /* ============================================================
@@ -551,64 +561,211 @@ function confirmerPaiement() {
 
   // Désactiver le bouton
   DOM.btnPay.disabled = true;
-  DOM.btnPay.textContent = '⏳ Connexion à MonCash…';
+  DOM.btnPay.textContent = '⏳ Initialisation...';
 
   // Fermer modal MonCash, ouvrir modal chargement
   setTimeout(() => {
     DOM.modalMoncash.hidden = true;
     DOM.modalLoading.hidden = false;
-    lancerSimulationPaiement(telNettoye);
+    
+    // Déclencher le flux API de Dexchange
+    initierTransactionDexchange(telNettoye);
   }, 400);
 }
 
 /* ============================================================
-   SIMULATION DE LA TRANSACTION (3 étapes animées)
-   Puis ouverture de MonCash officiel dans un nouvel onglet
+   GESTION DE L'API DEXCHANGE (Mode Production / Redirection)
 ============================================================ */
-function lancerSimulationPaiement(telClient) {
+async function initierTransactionDexchange(telClient) {
   const film = APP.filmEnCours;
   if (!film) return;
 
-  // Réinitialiser les étapes
-  [DOM.lstep1, DOM.lstep2, DOM.lstep3].forEach(s => s?.classList.remove('done'));
+  // Réinitialiser les indicateurs visuels du modal de chargement
+  DOM.loadingMsg.textContent = "Initialisation de la transaction MonCash sécurisée...";
+  [DOM.lstep1, DOM.lstep2, DOM.lstep3].forEach(s => {
+    if (s) {
+      s.classList.remove('done');
+      s.style.display = 'block';
+    }
+  });
 
-  // Étape 1 — Vérification numéro (1 sec)
+  if (DOM.lstep1) DOM.lstep1.textContent = "⏳ Vérification du numéro client...";
+  if (DOM.lstep2) DOM.lstep2.textContent = "⏳ Initialisation du paiement...";
+  if (DOM.lstep3) DOM.lstep3.textContent = "⏳ Statut : En attente de paiement...";
+
+  // Détecter si les identifiants réels n'ont pas encore été renseignés
+  const isDemo = 
+    DEXCHANGE_CONFIG.MERCHANT_KEY.includes('VOTRE_') ||
+    DEXCHANGE_CONFIG.CLIENT_ID.includes('VOTRE_') ||
+    DEXCHANGE_CONFIG.SECRET_KEY.includes('VOTRE_');
+
+  if (isDemo) {
+    console.log("[Dexchange Integration] Mode démo actif - Clés API Dexchange non configurées. Lancement de la simulation.");
+    lancerSimulationDemoDexchange(telClient);
+    return;
+  }
+
+  try {
+    const orderId = `SF-${film.id}-${Date.now()}`;
+    
+    // A. Génère la requête HTTP (fetch) vers l'API de Dexchange (mode production)
+    // Transmet : montant (500 HTG), devise (HTG), téléphone client, identifiant marchand (Merchant Key)
+    const payload = {
+      merchant_key:   DEXCHANGE_CONFIG.MERCHANT_KEY,
+      client_id:      DEXCHANGE_CONFIG.CLIENT_ID,
+      secret_key:     DEXCHANGE_CONFIG.SECRET_KEY,
+      merchant_phone: DEXCHANGE_CONFIG.MERCHANT_PHONE,
+      customer_phone: telClient,
+      amount:         DEXCHANGE_CONFIG.AMOUNT,
+      currency:       DEXCHANGE_CONFIG.CURRENCY,
+      order_id:       orderId,
+      description:    `StreamFinder - Accès au film ${film.titre}`
+    };
+
+    if (DOM.lstep1) {
+      DOM.lstep1.textContent = "✅ Numéro client validé";
+      DOM.lstep1.classList.add('done');
+    }
+    
+    DOM.loadingMsg.textContent = "Envoi de la demande de paiement à Dexchange...";
+
+    const response = await fetch(`${DEXCHANGE_CONFIG.API_URL}/payments/initiate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${DEXCHANGE_CONFIG.MERCHANT_KEY}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || "Erreur de réponse de la passerelle Dexchange.");
+    }
+
+    if (DOM.lstep2) {
+      DOM.lstep2.textContent = "✅ Lien sécurisé MonCash généré";
+      DOM.lstep2.classList.add('done');
+    }
+
+    DOM.loadingMsg.textContent = "Ouverture de la page de paiement Digicel sécurisée...";
+
+    // B. Récupère l'URL de redirection et ouvre un nouvel onglet
+    // L'utilisateur entre son code secret (PIN) sur cette page externe sécurisée
+    const urlRedirection = data.redirect_url;
+    window.open(urlRedirection, "_blank", "noopener,noreferrer");
+
+    // C. Démarrer l'écoute asynchrone du statut de la transaction (Anti-Fraude)
+    await verifierStatutTransaction(data.transaction_id || orderId);
+
+  } catch (error) {
+    console.error("[Dexchange Error]", error);
+    DOM.modalLoading.hidden = true;
+    afficherToast(`❌ Erreur API Dexchange : ${error.message || "Connexion impossible"}`);
+  }
+}
+
+/* ============================================================
+   ASYNCHRONOUS TRANSACTION VERIFICATION (Polling / Webhook Callback simulation)
+   🔒 Anti-fraude : Débloque le lien de streaming UNIQUEMENT si le statut est "PAID"
+============================================================ */
+async function verifierStatutTransaction(transactionId) {
+  DOM.loadingMsg.textContent = "Veuillez entrer votre code PIN MonCash sur la page sécurisée Digicel.";
+  
+  const maxAttempts = 60; // 5 minutes max
+  let attempt = 0;
+
+  while (attempt < maxAttempts) {
+    attempt++;
+    if (DOM.lstep3) {
+      DOM.lstep3.textContent = `⏳ Vérification du paiement (essai ${attempt}/${maxAttempts})...`;
+    }
+
+    try {
+      const response = await fetch(`${DEXCHANGE_CONFIG.API_URL}/payments/status/${transactionId}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${DEXCHANGE_CONFIG.MERCHANT_KEY}`
+        }
+      });
+
+      const data = await response.json();
+
+      // Si le paiement est validé par la plateforme Dexchange
+      if (response.ok && (data.status === 'PAID' || data.status === 'SUCCESS' || data.success === true)) {
+        if (DOM.lstep3) {
+          DOM.lstep3.textContent = "✅ Paiement MonCash validé !";
+          DOM.lstep3.classList.add('done');
+        }
+        DOM.loadingMsg.textContent = "Transaction Dexchange confirmée !";
+
+        // 🔒 Déverrouillage sécurisé anti-fraude
+        APP.paiementValide = true;
+
+        setTimeout(() => {
+          DOM.modalLoading.hidden = true;
+          afficherModalResultat(APP.filmEnCours);
+        }, 1200);
+        return;
+      }
+
+      // Si la transaction est explicitement annulée ou rejetée
+      if (data.status === 'FAILED' || data.status === 'CANCELLED') {
+        throw new Error("Paiement refusé ou annulé.");
+      }
+
+    } catch (err) {
+      console.warn("[Verification Status Polling]", err.message);
+    }
+
+    // Attendre 5 secondes avant la prochaine requête
+    await new Promise(resolve => setTimeout(resolve, 5000));
+  }
+
+  // Timeout dépassé
+  DOM.modalLoading.hidden = true;
+  afficherToast("⏳ Temps de validation dépassé. Si vous avez payé, veuillez contacter le support.");
+}
+
+/* ============================================================
+   SIMULATION DE DÉMO (Lorsque les clés ne sont pas configurées)
+============================================================ */
+function lancerSimulationDemoDexchange(telClient) {
+  const film = APP.filmEnCours;
+  
   setTimeout(() => {
-    DOM.lstep1.textContent = '✅ Numéro vérifié avec succès';
-    DOM.lstep1.classList.add('done');
-    DOM.loadingMsg.textContent = 'Initialisation de la transaction…';
+    if (DOM.lstep1) { DOM.lstep1.textContent = "✅ Numéro client validé (+509 " + telClient + ")"; DOM.lstep1.classList.add('done'); }
+    DOM.loadingMsg.textContent = "Initialisation de la transaction Dexchange...";
   }, 1000);
 
-  // Étape 2 — Initialisation transaction (2 sec)
   setTimeout(() => {
-    DOM.lstep2.textContent = '✅ Transaction de 500 HTG initialisée';
-    DOM.lstep2.classList.add('done');
-    DOM.loadingMsg.textContent = 'Redirection vers MonCash Digicel…';
-  }, 2000);
+    if (DOM.lstep2) { DOM.lstep2.textContent = "✅ Lien MonCash de démo généré"; DOM.lstep2.classList.add('done'); }
+    DOM.loadingMsg.textContent = "Redirection de simulation vers Digicel...";
+  }, 2200);
 
-  // Étape 3 — Redirection (3 sec)
   setTimeout(() => {
-    DOM.lstep3.textContent = '✅ Redirection effectuée !';
-    DOM.lstep3.classList.add('done');
+    if (DOM.lstep3) { DOM.lstep3.textContent = "✅ Redirection effectuée !"; DOM.lstep3.classList.add('done'); }
+    
+    // URL de démo MonCash
+    const orderId = `SF-DEMO-${film.id}-${Date.now()}`;
+    const desc = encodeURIComponent(`StreamFinder Demo - ${film.titre} - 500 HTG`);
+    const demoUrl = `https://moncashbutton.digicelhaiti.com/Moncash-business/Pay?number=38086319&amount=500&orderId=${orderId}&description=${desc}`;
+    
+    window.open(demoUrl, "_blank", "noopener,noreferrer");
 
-    // Construire l'URL MonCash officielle avec mon numéro marchand
-    const orderId = `SF-${film.id}-${Date.now()}`;
-    const desc    = encodeURIComponent(`StreamFinder - ${film.titre} - 500 HTG`);
-    const urlMoncash = `https://moncashbutton.digicelhaiti.com/Moncash-business/Pay?number=${MERCHANT_CONFIG.numero}&amount=${MERCHANT_CONFIG.montant}&orderId=${orderId}&description=${desc}`;
-
-    // Ouvrir MonCash dans un nouvel onglet
-    window.open(urlMoncash, '_blank', 'noopener,noreferrer');
-
-    // 🔒 Valider le verrou anti-fraude
+    // Débloquer le paiement
     APP.paiementValide = true;
 
-    // Fermer loading, afficher résultat
     setTimeout(() => {
       DOM.modalLoading.hidden = true;
       afficherModalResultat(film);
-    }, 600);
+      afficherToast("💡 Mode Démo : Clés Dexchange absentes, redirection MonCash simulée.");
+    }, 1000);
 
-  }, 3000);
+  }, 3500);
 }
 
 /* ============================================================
