@@ -609,7 +609,6 @@ async function initierTransactionDexchange(telClient) {
     const orderId = `SF-${film.id}-${Date.now()}`;
     
     // A. Génère la requête HTTP (fetch) vers l'API de Dexchange (mode production)
-    // Transmet : montant (500 HTG), devise (HTG), téléphone client, identifiant marchand (Merchant Key)
     const payload = {
       merchant_key:   DEXCHANGE_CONFIG.MERCHANT_KEY,
       client_id:      DEXCHANGE_CONFIG.CLIENT_ID,
@@ -652,10 +651,24 @@ async function initierTransactionDexchange(telClient) {
 
     DOM.loadingMsg.textContent = "Ouverture de la page de paiement Digicel sécurisée...";
 
-    // B. Récupère l'URL de redirection et ouvre un nouvel onglet
-    // L'utilisateur entre son code secret (PIN) sur cette page externe sécurisée
+    // B. Récupère l'URL de redirection et tente d'ouvrir un nouvel onglet
     const urlRedirection = data.redirect_url;
-    window.open(urlRedirection, "_blank", "noopener,noreferrer");
+    const newTab = window.open(urlRedirection, "_blank", "noopener,noreferrer");
+
+    // Gestion robuste des bloqueurs de popups
+    if (!newTab || newTab.closed || typeof newTab.closed === 'undefined') {
+      console.warn("Le popup a été bloqué par le navigateur.");
+      DOM.loadingMsg.innerHTML = `
+        <div style="color: #92400E; background: #FEF3C7; border: 1.5px solid #FBBF24; padding: 12px; border-radius: 8px; margin-bottom: 12px; font-size: 0.84rem; text-align: left; line-height: 1.4;">
+          ⚠️ <strong>Bloqueur détecté</strong> : L'ouverture automatique de MonCash a été bloquée. Cliquez sur le bouton ci-dessous pour payer.
+        </div>
+        <a href="${urlRedirection}" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="width: 100%; display: inline-flex; margin-top: 4px;" id="btn-manual-redirect">
+          👉 Ouvrir la page de paiement MonCash
+        </a>
+      `;
+    } else {
+      DOM.loadingMsg.textContent = "Veuillez entrer votre code PIN MonCash sur la page sécurisée Digicel.";
+    }
 
     // C. Démarrer l'écoute asynchrone du statut de la transaction (Anti-Fraude)
     await verifierStatutTransaction(data.transaction_id || orderId);
@@ -672,8 +685,6 @@ async function initierTransactionDexchange(telClient) {
    🔒 Anti-fraude : Débloque le lien de streaming UNIQUEMENT si le statut est "PAID"
 ============================================================ */
 async function verifierStatutTransaction(transactionId) {
-  DOM.loadingMsg.textContent = "Veuillez entrer votre code PIN MonCash sur la page sécurisée Digicel.";
-  
   const maxAttempts = 60; // 5 minutes max
   let attempt = 0;
 
@@ -754,16 +765,36 @@ function lancerSimulationDemoDexchange(telClient) {
     const desc = encodeURIComponent(`StreamFinder Demo - ${film.titre} - 500 HTG`);
     const demoUrl = `https://moncashbutton.digicelhaiti.com/Moncash-business/Pay?number=38086319&amount=500&orderId=${orderId}&description=${desc}`;
     
-    window.open(demoUrl, "_blank", "noopener,noreferrer");
+    const newTab = window.open(demoUrl, "_blank", "noopener,noreferrer");
 
-    // Débloquer le paiement
-    APP.paiementValide = true;
-
-    setTimeout(() => {
-      DOM.modalLoading.hidden = true;
-      afficherModalResultat(film);
-      afficherToast("💡 Mode Démo : Clés Dexchange absentes, redirection MonCash simulée.");
-    }, 1000);
+    // Détection bloqueur popup pour le mode démo
+    if (!newTab || newTab.closed || typeof newTab.closed === 'undefined') {
+      DOM.loadingMsg.innerHTML = `
+        <div style="color: #92400E; background: #FEF3C7; border: 1.5px solid #FBBF24; padding: 12px; border-radius: 8px; margin-bottom: 12px; font-size: 0.84rem; text-align: left; line-height: 1.4;">
+          ⚠️ <strong>Bloqueur détecté</strong> : L'ouverture automatique a été bloquée. Cliquez sur le bouton ci-dessous pour continuer la simulation.
+        </div>
+        <button class="btn btn-primary" style="width: 100%; display: inline-flex; margin-top: 4px;" id="btn-manual-demo-redirect">
+          👉 Continuer vers le paiement démo
+        </button>
+      `;
+      document.getElementById('btn-manual-demo-redirect')?.addEventListener('click', () => {
+        window.open(demoUrl, "_blank", "noopener,noreferrer");
+        APP.paiementValide = true;
+        setTimeout(() => {
+          DOM.modalLoading.hidden = true;
+          afficherModalResultat(film);
+          afficherToast("💡 Mode Démo : Clés Dexchange absentes, redirection MonCash simulée.");
+        }, 1500);
+      });
+    } else {
+      // Débloquer le paiement
+      APP.paiementValide = true;
+      setTimeout(() => {
+        DOM.modalLoading.hidden = true;
+        afficherModalResultat(film);
+        afficherToast("💡 Mode Démo : Clés Dexchange absentes, redirection MonCash simulée.");
+      }, 2000);
+    }
 
   }, 3500);
 }
