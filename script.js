@@ -1,124 +1,138 @@
 /**
  * ============================================================
  * STREAMFINDER – SCRIPT.JS
- * Logique SPA : Enregistrement → Catalogue Films → Paiement MonCash
+ * Architecture SPA :
+ *   Page 1 → Enregistrement
+ *   Page 2 → Catalogue films (filtres + recherche)
+ *   Modal  → Paiement MonCash (+509 38 08 63 19 | 500 HTG)
+ *   Sécurité anti-fraude → Lien film débloqué UNIQUEMENT après simulation validée
  * ============================================================
  */
 
 'use strict';
 
 /* ============================================================
-   BASE DE DONNÉES LOCALE (Simulateur JSON)
-   8 films populaires avec plateformes légales officielles
+   CONFIGURATION MARCHANDE (NE PAS MODIFIER)
 ============================================================ */
-const MOVIES_DB = [
+const MERCHANT_CONFIG = {
+  numero:   '38086319',        // Numéro MonCash marchand (+509 38 08 63 19)
+  montant:  500,               // 500 HTG
+  nom:      'StreamFinder',
+  prefixe:  '+509'
+};
+
+/* ============================================================
+   BASE DE DONNÉES FILMS
+   Images stables depuis TMDB (The Movie Database)
+============================================================ */
+const FILMS_DB = [
   {
     id: 1,
-    title: "Dune : Partie 2",
-    emoji: "🏜️",
-    genre: "Science-Fiction",
-    year: 2024,
-    rating: "⭐ 8.5",
-    desc: "Paul Atréides s'unit aux Fremen pour mener la guerre sainte contre ceux qui ont détruit sa famille.",
-    bgColor: "#7C5A28",
-    platforms: [
-      { name: "Max (HBO)", url: "https://www.max.com/", color: "#002BE7", icon: "M" },
-      { name: "Prime Video", url: "https://www.primevideo.com/", color: "#00A8E0", icon: "P" }
+    titre:      'Dune : Partie 2',
+    genre:      'Science-Fiction',
+    annee:      2024,
+    note:       '⭐ 8.5',
+    desc:       'Paul Atréides s\'unit aux Fremen pour mener la guerre sainte contre ceux qui ont détruit sa famille.',
+    image:      'https://image.tmdb.org/t/p/w500/czembW0Rk1Ke7lCJGahbOhdCuhV.jpg',
+    imageAlt:   'Affiche Dune Partie 2',
+    plateformes: [
+      { nom: 'Max (HBO)',    url: 'https://www.max.com/',                              couleur: '#002BE7', icone: 'M' },
+      { nom: 'Prime Video', url: 'https://www.primevideo.com/',                        couleur: '#00A8E0', icone: 'P' }
     ]
   },
   {
     id: 2,
-    title: "Deadpool & Wolverine",
-    emoji: "⚔️",
-    genre: "Action",
-    year: 2024,
-    rating: "⭐ 7.8",
-    desc: "Deadpool et Wolverine doivent travailler ensemble pour sauver le multivers Marvel.",
-    bgColor: "#8B1A1A",
-    platforms: [
-      { name: "Disney+", url: "https://www.disneyplus.com/fr-fr/signup", color: "#113CCF", icon: "D+" }
+    titre:      'Deadpool & Wolverine',
+    genre:      'Action',
+    annee:      2024,
+    note:       '⭐ 7.8',
+    desc:       'Deadpool et Wolverine doivent travailler ensemble pour sauver le multivers Marvel.',
+    image:      'https://image.tmdb.org/t/p/w500/8cdWjvZQUExUUTzyp4t6EDMubfO.jpg',
+    imageAlt:   'Affiche Deadpool et Wolverine',
+    plateformes: [
+      { nom: 'Disney+', url: 'https://www.disneyplus.com/fr-fr/signup', couleur: '#113CCF', icone: 'D+' }
     ]
   },
   {
     id: 3,
-    title: "Inside Out 2",
-    emoji: "🎭",
-    genre: "Animation",
-    year: 2024,
-    rating: "⭐ 7.6",
-    desc: "Riley entre au lycée et de nouvelles émotions font leur apparition dans son monde intérieur.",
-    bgColor: "#2E5A8E",
-    platforms: [
-      { name: "Disney+", url: "https://www.disneyplus.com/fr-fr/signup", color: "#113CCF", icon: "D+" }
+    titre:      'Inside Out 2',
+    genre:      'Animation',
+    annee:      2024,
+    note:       '⭐ 7.6',
+    desc:       'Riley entre au lycée et de nouvelles émotions font leur apparition dans son monde intérieur.',
+    image:      'https://image.tmdb.org/t/p/w500/vpnVM9B6NMmQpWeZvzLvDESb2QY.jpg',
+    imageAlt:   'Affiche Inside Out 2',
+    plateformes: [
+      { nom: 'Disney+', url: 'https://www.disneyplus.com/fr-fr/signup', couleur: '#113CCF', icone: 'D+' }
     ]
   },
   {
     id: 4,
-    title: "Alien : Romulus",
-    emoji: "👾",
-    genre: "Science-Fiction",
-    year: 2024,
-    rating: "⭐ 7.4",
-    desc: "Un groupe de jeunes colonisateurs affronte la forme de vie la plus terrifiante de l'univers.",
-    bgColor: "#1A3A1A",
-    platforms: [
-      { name: "Disney+", url: "https://www.disneyplus.com/fr-fr/signup", color: "#113CCF", icon: "D+" },
-      { name: "Prime Video", url: "https://www.primevideo.com/", color: "#00A8E0", icon: "P" }
+    titre:      'Oppenheimer',
+    genre:      'Drame',
+    annee:      2023,
+    note:       '⭐ 8.9',
+    desc:       'L\'histoire de J. Robert Oppenheimer et son rôle dans le développement de la bombe atomique.',
+    image:      'https://image.tmdb.org/t/p/w500/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg',
+    imageAlt:   'Affiche Oppenheimer',
+    plateformes: [
+      { nom: 'Netflix',      url: 'https://www.netflix.com/signup',    couleur: '#E50914', icone: 'N' },
+      { nom: 'Prime Video',  url: 'https://www.primevideo.com/',        couleur: '#00A8E0', icone: 'P' }
     ]
   },
   {
     id: 5,
-    title: "Oppenheimer",
-    emoji: "💥",
-    genre: "Drame",
-    year: 2023,
-    rating: "⭐ 8.9",
-    desc: "L'histoire du physicien J. Robert Oppenheimer et son rôle dans le développement de la bombe atomique.",
-    bgColor: "#4A3000",
-    platforms: [
-      { name: "Netflix", url: "https://www.netflix.com/signup", color: "#E50914", icon: "N" },
-      { name: "Prime Video", url: "https://www.primevideo.com/", color: "#00A8E0", icon: "P" }
+    titre:      'Alien : Romulus',
+    genre:      'Science-Fiction',
+    annee:      2024,
+    note:       '⭐ 7.4',
+    desc:       'Un groupe de jeunes colonisateurs affronte la forme de vie la plus terrifiante de l\'univers.',
+    image:      'https://image.tmdb.org/t/p/w500/b33nnKl1GSFbao4l3fZDDqsMx0F.jpg',
+    imageAlt:   'Affiche Alien Romulus',
+    plateformes: [
+      { nom: 'Disney+',     url: 'https://www.disneyplus.com/fr-fr/signup', couleur: '#113CCF', icone: 'D+' },
+      { nom: 'Prime Video', url: 'https://www.primevideo.com/',             couleur: '#00A8E0', icone: 'P'  }
     ]
   },
   {
     id: 6,
-    title: "The Batman",
-    emoji: "🦇",
-    genre: "Action",
-    year: 2022,
-    rating: "⭐ 7.9",
-    desc: "Bruce Wayne, dans sa deuxième année en tant que Batman, traque un tueur en série appelé l'Énigmatiste.",
-    bgColor: "#1A1A2E",
-    platforms: [
-      { name: "Netflix", url: "https://www.netflix.com/signup", color: "#E50914", icon: "N" },
-      { name: "Max (HBO)", url: "https://www.max.com/", color: "#002BE7", icon: "M" }
+    titre:      'The Batman',
+    genre:      'Action',
+    annee:      2022,
+    note:       '⭐ 7.9',
+    desc:       'Bruce Wayne traque un tueur en série appelé l\'Énigmatiste dans les rues sombres de Gotham.',
+    image:      'https://image.tmdb.org/t/p/w500/74xTEgt7R36Fpooo50r9T25onhq.jpg',
+    imageAlt:   'Affiche The Batman',
+    plateformes: [
+      { nom: 'Netflix',   url: 'https://www.netflix.com/signup', couleur: '#E50914', icone: 'N' },
+      { nom: 'Max (HBO)', url: 'https://www.max.com/',           couleur: '#002BE7', icone: 'M' }
     ]
   },
   {
     id: 7,
-    title: "Moana 2",
-    emoji: "🌊",
-    genre: "Animation",
-    year: 2024,
-    rating: "⭐ 6.7",
-    desc: "Vaiana part à la découverte de mers inexplorées suite à l'appel inattendu de ses ancêtres.",
-    bgColor: "#0A4A6E",
-    platforms: [
-      { name: "Disney+", url: "https://www.disneyplus.com/fr-fr/signup", color: "#113CCF", icon: "D+" }
+    titre:      'Interstellar',
+    genre:      'Science-Fiction',
+    annee:      2014,
+    note:       '⭐ 8.7',
+    desc:       'Un groupe d\'astronautes voyage à travers un trou de ver pour trouver un nouveau foyer pour l\'humanité.',
+    image:      'https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg',
+    imageAlt:   'Affiche Interstellar',
+    plateformes: [
+      { nom: 'Netflix',    url: 'https://www.netflix.com/signup', couleur: '#E50914', icone: 'N'  },
+      { nom: 'Apple TV+', url: 'https://tv.apple.com/',           couleur: '#1C1C1E', icone: 'A'  }
     ]
   },
   {
     id: 8,
-    title: "Interstellar",
-    emoji: "🚀",
-    genre: "Science-Fiction",
-    year: 2014,
-    rating: "⭐ 8.7",
-    desc: "Un groupe d'astronautes voyage à travers un trou de ver pour trouver un nouveau foyer pour l'humanité.",
-    bgColor: "#0D0D2E",
-    platforms: [
-      { name: "Netflix", url: "https://www.netflix.com/signup", color: "#E50914", icon: "N" },
-      { name: "Apple TV+", url: "https://tv.apple.com/", color: "#1C1C1E", icon: "A" }
+    titre:      'Moana 2',
+    genre:      'Animation',
+    annee:      2024,
+    note:       '⭐ 6.7',
+    desc:       'Vaiana répond à l\'appel de ses ancêtres et part vers des mers inexplorées avec une nouvelle équipe.',
+    image:      'https://image.tmdb.org/t/p/w500/4YZgsItEdNS0vBHOVV4Hpt4nrn1.jpg',
+    imageAlt:   'Affiche Moana 2',
+    plateformes: [
+      { nom: 'Disney+', url: 'https://www.disneyplus.com/fr-fr/signup', couleur: '#113CCF', icone: 'D+' }
     ]
   }
 ];
@@ -126,612 +140,572 @@ const MOVIES_DB = [
 /* ============================================================
    ÉTAT DE L'APPLICATION
 ============================================================ */
-const state = {
-  currentUser: null,       // { firstname, lastname, email, phone }
-  activeGenre: 'all',      // Filtre actif
-  searchQuery: '',         // Requête de recherche
-  selectedMovie: null,     // Film sélectionné pour le paiement
-  paymentSimulated: false  // Flag de simulation paiement
+const APP = {
+  user:          null,    // { firstname, lastname, email, phone }
+  genre:         'all',
+  query:         '',
+  filmEnCours:   null,    // Film sélectionné pour le paiement
+  paiementValide: false   // 🔒 Anti-fraude : true seulement après simulation complète
 };
 
 /* ============================================================
    RÉFÉRENCES DOM
 ============================================================ */
-const dom = {
+const $ = id => document.getElementById(id);
+
+const DOM = {
   // Pages
-  pageRegister: document.getElementById('page-register'),
-  pageFilms:    document.getElementById('page-films'),
+  pageRegister: $('page-register'),
+  pageFilms:    $('page-films'),
 
   // Header
-  searchWrapper: document.getElementById('search-wrapper'),
-  searchInput:   document.getElementById('search-input'),
-  userInfo:      document.getElementById('user-info'),
-  userAvatar:    document.getElementById('user-avatar'),
-  userNameDisplay: document.getElementById('user-name-display'),
-  logoutBtn:     document.getElementById('logout-btn'),
+  searchWrapper:  $('search-wrapper'),
+  searchInput:    $('search-input'),
+  headerGuest:    $('header-guest'),
+  headerUser:     $('header-user'),
+  userChipAvatar: $('user-chip-avatar'),
+  userChipName:   $('user-chip-name'),
 
   // Enregistrement
-  registerForm:  document.getElementById('register-form'),
+  registerForm:  $('register-form'),
 
   // Films
-  moviesGrid:    document.getElementById('movies-grid'),
-  noResults:     document.getElementById('no-results'),
-  searchInfo:    document.getElementById('search-info'),
-  welcomeName:   document.getElementById('welcome-name'),
-  filmCount:     document.getElementById('film-count'),
+  moviesGrid:   $('movies-grid'),
+  noResults:    $('no-results'),
+  searchInfo:   $('search-result-info'),
+  welcomeName:  $('welcome-firstname'),
+  totalFilms:   $('total-films'),
 
   // Modal MonCash
-  modalMoncash:  document.getElementById('modal-moncash'),
-  moncashPhone:  document.getElementById('moncash-phone'),
-  moncashFilmTitle: document.getElementById('moncash-film-title'),
-  moncashFilmEmoji: document.getElementById('moncash-film-emoji'),
-  errMoncashPhone: document.getElementById('err-moncash-phone'),
-  btnPayMoncash: document.getElementById('btn-pay-moncash'),
-  moncashDirectLink: document.getElementById('moncash-direct-link'),
+  modalMoncash: $('modal-moncash'),
+  mcPhone:      $('mc-phone'),
+  mcFilmTitle:  $('mc-film-title'),
+  mcFilmThumb:  $('mc-film-thumb'),
+  errMcPhone:   $('err-mc-phone'),
+  btnPay:       $('btn-confirm-pay'),
+
+  // Modal Chargement
+  modalLoading: $('modal-loading'),
+  loadingMsg:   $('loading-msg'),
+  lstep1:       $('lstep-1'),
+  lstep2:       $('lstep-2'),
+  lstep3:       $('lstep-3'),
 
   // Modal Résultat
-  modalResult:   document.getElementById('modal-result'),
-  resultFilmName: document.getElementById('result-film-name'),
-  resultPlatforms: document.getElementById('result-platforms'),
+  modalResult:     $('modal-result'),
+  resultFilmName:  $('result-film-name'),
+  resultLinks:     $('result-links'),
 
-  // Toast
-  toast: document.getElementById('toast'),
-
-  // Pied de page
-  footerYear: document.getElementById('footer-year')
+  // Divers
+  toast:      $('toast'),
+  footerYear: $('footer-year')
 };
 
 /* ============================================================
    INITIALISATION
 ============================================================ */
 function init() {
-  // Année dans le footer
-  if (dom.footerYear) dom.footerYear.textContent = new Date().getFullYear();
+  if (DOM.footerYear) DOM.footerYear.textContent = new Date().getFullYear();
 
-  // Vérifier si un utilisateur est déjà enregistré (session simulée)
-  const savedUser = sessionStorage.getItem('sf_user');
-  if (savedUser) {
+  // Restaurer session
+  const saved = sessionStorage.getItem('sf_session');
+  if (saved) {
     try {
-      state.currentUser = JSON.parse(savedUser);
-      showFilmsPage();
-    } catch {
-      sessionStorage.removeItem('sf_user');
-    }
+      APP.user = JSON.parse(saved);
+      afficherPageFilms();
+      return;
+    } catch { sessionStorage.removeItem('sf_session'); }
   }
 
-  // Attacher les écouteurs d'événements
-  bindEvents();
+  attacherEvenements();
 }
 
 /* ============================================================
-   LIAISON DES ÉVÉNEMENTS
+   ÉVÉNEMENTS
 ============================================================ */
-function bindEvents() {
+function attacherEvenements() {
   // Formulaire d'enregistrement
-  if (dom.registerForm) {
-    dom.registerForm.addEventListener('submit', handleRegister);
-  }
+  DOM.registerForm?.addEventListener('submit', soumettreInscription);
 
-  // Barre de recherche
-  if (dom.searchInput) {
-    dom.searchInput.addEventListener('input', debounce(handleSearch, 200));
-  }
+  // Recherche
+  DOM.searchInput?.addEventListener('input', debounce(rechercherFilms, 220));
 
-  // Filtres par genre
+  // Filtres genre
   document.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.addEventListener('click', handleGenreFilter);
+    btn.addEventListener('click', filtrerParGenre);
   });
 
-  // Fermeture modal MonCash
-  document.getElementById('modal-moncash-close')?.addEventListener('click', closeMoncashModal);
+  // MonCash modal
+  $('mc-close')?.addEventListener('click', fermerModalMoncash);
+  DOM.btnPay?.addEventListener('click', confirmerPaiement);
 
-  // Bouton "Payer maintenant"
-  if (dom.btnPayMoncash) {
-    dom.btnPayMoncash.addEventListener('click', handleMoncashPayment);
-  }
-
-  // Fermeture modal résultat
-  document.getElementById('modal-result-close')?.addEventListener('click', closeResultModal);
-  document.getElementById('result-close-btn')?.addEventListener('click', closeResultModal);
-
-  // Fermeture des modals en cliquant sur le fond
-  document.getElementById('modal-moncash')?.addEventListener('click', (e) => {
-    if (e.target === dom.modalMoncash) closeMoncashModal();
+  // Fermer en cliquant backdrop
+  DOM.modalMoncash?.addEventListener('click', e => {
+    if (e.target === DOM.modalMoncash) fermerModalMoncash();
   });
-  document.getElementById('modal-result')?.addEventListener('click', (e) => {
-    if (e.target === dom.modalResult) closeResultModal();
+  DOM.modalResult?.addEventListener('click', e => {
+    if (e.target === DOM.modalResult) closeResultModal();
   });
 
-  // Touche Échap pour fermer les modals
-  document.addEventListener('keydown', (e) => {
+  // Echap
+  document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
-      closeMoncashModal();
+      fermerModalMoncash();
       closeResultModal();
     }
   });
 
-  // Autoformat du numéro de téléphone MonCash
-  if (dom.moncashPhone) {
-    dom.moncashPhone.addEventListener('input', formatPhoneInput);
-  }
-  const regPhone = document.getElementById('reg-phone');
-  if (regPhone) {
-    regPhone.addEventListener('input', formatPhoneInput);
-  }
+  // Format téléphone
+  $('r-phone')?.addEventListener('input', formaterTel);
+  DOM.mcPhone?.addEventListener('input', formaterTel);
 }
 
 /* ============================================================
-   GESTION DU FORMULAIRE D'ENREGISTREMENT
+   INSCRIPTION
 ============================================================ */
-function handleRegister(e) {
+function soumettreInscription(e) {
   e.preventDefault();
 
-  const firstname = document.getElementById('reg-firstname').value.trim();
-  const lastname  = document.getElementById('reg-lastname').value.trim();
-  const email     = document.getElementById('reg-email').value.trim();
-  const phone     = document.getElementById('reg-phone').value.trim();
+  const prenom = $('r-firstname').value.trim();
+  const nom    = $('r-lastname').value.trim();
+  const email  = $('r-email').value.trim();
+  const tel    = $('r-phone').value.trim();
 
-  // Validation
-  let valid = true;
+  let ok = true;
 
-  if (!firstname || firstname.length < 2) {
-    showFieldError('err-firstname', 'Veuillez entrer votre prénom (min. 2 caractères).');
-    document.getElementById('reg-firstname').classList.add('error');
-    valid = false;
+  // Validation prénom
+  if (!prenom || prenom.length < 2) {
+    afficherErreur('err-firstname', 'Entrez votre prénom (min. 2 caractères).');
+    $('r-firstname').classList.add('input-error');
+    ok = false;
   } else {
-    clearFieldError('err-firstname');
-    document.getElementById('reg-firstname').classList.remove('error');
+    effacerErreur('err-firstname'); $('r-firstname').classList.remove('input-error');
   }
 
-  if (!lastname || lastname.length < 2) {
-    showFieldError('err-lastname', 'Veuillez entrer votre nom (min. 2 caractères).');
-    document.getElementById('reg-lastname').classList.add('error');
-    valid = false;
+  // Validation nom
+  if (!nom || nom.length < 2) {
+    afficherErreur('err-lastname', 'Entrez votre nom (min. 2 caractères).');
+    $('r-lastname').classList.add('input-error');
+    ok = false;
   } else {
-    clearFieldError('err-lastname');
-    document.getElementById('reg-lastname').classList.remove('error');
+    effacerErreur('err-lastname'); $('r-lastname').classList.remove('input-error');
   }
 
-  if (!email || !isValidEmail(email)) {
-    showFieldError('err-email', 'Veuillez entrer une adresse e-mail valide.');
-    document.getElementById('reg-email').classList.add('error');
-    valid = false;
+  // Validation email
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    afficherErreur('err-email', 'Entrez une adresse e-mail valide.');
+    $('r-email').classList.add('input-error');
+    ok = false;
   } else {
-    clearFieldError('err-email');
-    document.getElementById('reg-email').classList.remove('error');
+    effacerErreur('err-email'); $('r-email').classList.remove('input-error');
   }
 
-  if (!phone || phone.replace(/\s/g, '').length < 8) {
-    showFieldError('err-phone', 'Entrez un numéro MonCash valide (8 chiffres).');
-    document.getElementById('reg-phone').classList.add('error');
-    valid = false;
+  // Validation téléphone
+  if (!tel || tel.replace(/\s/g,'').length < 8) {
+    afficherErreur('err-phone', 'Entrez votre numéro MonCash (8 chiffres).');
+    $('r-phone').classList.add('input-error');
+    ok = false;
   } else {
-    clearFieldError('err-phone');
-    document.getElementById('reg-phone').classList.remove('error');
+    effacerErreur('err-phone'); $('r-phone').classList.remove('input-error');
   }
 
-  if (!valid) return;
+  if (!ok) return;
 
-  // Enregistrement réussi
-  const user = { firstname, lastname, email, phone };
-  state.currentUser = user;
-  sessionStorage.setItem('sf_user', JSON.stringify(user));
+  // Succès
+  APP.user = { prenom, nom, email, tel };
+  sessionStorage.setItem('sf_session', JSON.stringify(APP.user));
 
-  // Animation du bouton
-  const btn = document.getElementById('register-btn');
+  const btn = $('btn-register');
   btn.textContent = '✅ Compte créé ! Chargement…';
   btn.disabled = true;
-  btn.style.opacity = '0.8';
 
-  setTimeout(() => {
-    showFilmsPage();
-  }, 700);
+  setTimeout(afficherPageFilms, 600);
 }
 
 /* ============================================================
-   NAVIGATION ENTRE LES PAGES (SPA)
+   NAVIGATION SPA
 ============================================================ */
-function showFilmsPage() {
-  // Cacher la page d'accueil
-  dom.pageRegister.hidden = true;
-
-  // Afficher la page des films
-  dom.pageFilms.hidden = false;
-
-  // Mettre à jour le header
-  dom.searchWrapper.hidden = false;
-  dom.userInfo.hidden = false;
-  dom.logoutBtn.hidden = false;
-
-  // Afficher les infos utilisateur dans le header
-  const u = state.currentUser;
-  if (u) {
-    dom.userAvatar.textContent = u.firstname.charAt(0).toUpperCase();
-    dom.userNameDisplay.textContent = `${u.firstname} ${u.lastname}`;
-    dom.welcomeName.textContent = u.firstname;
-  }
-
-  // Scroll vers le haut
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-
-  // Rendre les films
-  renderMovies();
-
-  // Mettre à jour le compteur
-  dom.filmCount.textContent = MOVIES_DB.length;
-}
-
-/* Aller à la page d'accueil (accessible depuis le logo) */
-function goHome() {
-  if (!state.currentUser) {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  } else {
-    // Déjà connecté : reste sur la page films, scrolle en haut
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-}
-
-/* Déconnexion */
-function logout() {
-  state.currentUser = null;
-  state.activeGenre = 'all';
-  state.searchQuery = '';
-  sessionStorage.removeItem('sf_user');
-
-  // Réinitialiser les champs du formulaire
-  document.getElementById('register-form')?.reset();
-  const regBtn = document.getElementById('register-btn');
-  if (regBtn) { regBtn.textContent = "S'enregistrer et accéder au catalogue 🚀"; regBtn.disabled = false; regBtn.style.opacity = '1'; }
-
-  // Cacher la page des films, afficher la page d'accueil
-  dom.pageFilms.hidden = true;
-  dom.pageRegister.hidden = false;
+function afficherPageFilms() {
+  DOM.pageRegister.hidden = true;
+  DOM.pageFilms.hidden    = false;
 
   // Header
-  dom.searchWrapper.hidden = true;
-  dom.userInfo.hidden = true;
-  dom.logoutBtn.hidden = true;
+  DOM.searchWrapper.hidden = false;
+  DOM.headerGuest.hidden   = true;
+  DOM.headerUser.hidden    = false;
+
+  // Chip utilisateur
+  const u = APP.user;
+  DOM.userChipAvatar.textContent = u.prenom.charAt(0).toUpperCase();
+  DOM.userChipName.textContent   = `${u.prenom} ${u.nom}`;
+  DOM.welcomeName.textContent    = u.prenom + ' !';
+
+  // Pré-remplir téléphone MonCash
+  if (DOM.mcPhone && u.tel) DOM.mcPhone.value = u.tel;
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
-  showToast('Vous avez été déconnecté. À bientôt !');
+  rendreCatalogue();
+  DOM.totalFilms.textContent = FILMS_DB.length;
+
+  // Ré-attacher événements (premier appel)
+  if (!DOM.registerForm._eventsBound) {
+    attacherEvenements();
+    DOM.registerForm._eventsBound = true;
+  }
+}
+
+function logout() {
+  // Réinitialiser l'état
+  APP.user          = null;
+  APP.genre         = 'all';
+  APP.query         = '';
+  APP.filmEnCours   = null;
+  APP.paiementValide = false;
+
+  sessionStorage.removeItem('sf_session');
+
+  // Remettre les boutons header
+  DOM.headerUser.hidden   = true;
+  DOM.headerGuest.hidden  = false;
+
+  // Réinitialiser le formulaire
+  DOM.registerForm?.reset();
+  const btn = $('btn-register');
+  if (btn) { btn.textContent = 'Accéder au catalogue 🚀'; btn.disabled = false; }
+
+  // Revenir à la page d'accueil
+  DOM.searchWrapper.hidden = true;
+  DOM.pageFilms.hidden     = true;
+  DOM.pageRegister.hidden  = false;
+
+  // Réinitialiser filtres
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  $('f-all')?.classList.add('active');
+  if (DOM.searchInput) DOM.searchInput.value = '';
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  afficherToast('Vous avez été déconnecté. À bientôt !');
+}
+
+function handleLogoClick() {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function scrollToRegister() {
+  $('register-section')?.scrollIntoView({ behavior: 'smooth' });
 }
 
 /* ============================================================
-   RENDU DE LA GRILLE DE FILMS
+   RENDU DU CATALOGUE
 ============================================================ */
-function renderMovies() {
-  const query = state.searchQuery.toLowerCase();
-  const genre = state.activeGenre;
+function rendreCatalogue() {
+  const q = APP.query.toLowerCase();
+  const g = APP.genre;
 
-  // Filtrage
-  let filtered = MOVIES_DB.filter(movie => {
-    const matchGenre = genre === 'all' || movie.genre === genre;
-    const matchSearch = !query
-      || movie.title.toLowerCase().includes(query)
-      || movie.genre.toLowerCase().includes(query)
-      || movie.desc.toLowerCase().includes(query);
+  const filtres = FILMS_DB.filter(f => {
+    const matchGenre  = g === 'all' || f.genre === g;
+    const matchSearch = !q || f.titre.toLowerCase().includes(q) || f.genre.toLowerCase().includes(q) || f.desc.toLowerCase().includes(q);
     return matchGenre && matchSearch;
   });
 
-  // Vider la grille
-  dom.moviesGrid.innerHTML = '';
+  DOM.moviesGrid.innerHTML = '';
 
-  if (filtered.length === 0) {
-    dom.noResults.hidden = false;
-    dom.searchInfo.textContent = '';
-  } else {
-    dom.noResults.hidden = true;
-
-    // Info recherche
-    if (query) {
-      dom.searchInfo.textContent = `${filtered.length} résultat${filtered.length > 1 ? 's' : ''} pour "${query}"`;
-    } else if (genre !== 'all') {
-      dom.searchInfo.textContent = `${filtered.length} film${filtered.length > 1 ? 's' : ''} en ${genre}`;
-    } else {
-      dom.searchInfo.textContent = '';
-    }
-
-    // Injection des cartes avec délai d'animation échelonné
-    filtered.forEach((movie, index) => {
-      const card = createMovieCard(movie, index);
-      dom.moviesGrid.appendChild(card);
-    });
+  if (filtres.length === 0) {
+    DOM.noResults.hidden = false;
+    DOM.searchInfo.textContent = '';
+    return;
   }
+
+  DOM.noResults.hidden = true;
+  DOM.searchInfo.textContent = q
+    ? `${filtres.length} résultat${filtres.length > 1 ? 's' : ''} pour "${APP.query}"`
+    : g !== 'all' ? `${filtres.length} film${filtres.length > 1 ? 's' : ''} en ${g}`
+    : '';
+
+  filtres.forEach((film, idx) => {
+    const carte = creerCartFilm(film, idx);
+    DOM.moviesGrid.appendChild(carte);
+  });
 }
 
 /* ============================================================
    CRÉATION D'UNE CARTE FILM
 ============================================================ */
-function createMovieCard(movie, index) {
-  const card = document.createElement('article');
-  card.className = 'movie-card';
-  card.setAttribute('role', 'article');
-  card.setAttribute('aria-label', `Film : ${movie.title}`);
-  card.style.animationDelay = `${index * 60}ms`;
+function creerCartFilm(film, idx) {
+  const article = document.createElement('article');
+  article.className = 'movie-card';
+  article.style.animationDelay = `${idx * 55}ms`;
+  article.setAttribute('aria-label', `Film : ${film.titre}`);
 
-  // Badges de plateformes (juste les noms pour la carte)
-  const platformBadges = movie.platforms
-    .map(p => `<span class="plt-name-badge">${p.name}</span>`)
+  const pillsHTML = film.plateformes
+    .map(p => `<span class="platform-pill">${p.nom}</span>`)
     .join('');
 
-  card.innerHTML = `
-    <div class="movie-poster" style="background: linear-gradient(135deg, ${movie.bgColor}, ${adjustColor(movie.bgColor)});">
-      <span style="position:relative;z-index:1;">${movie.emoji}</span>
-      <span class="movie-badge-year">${movie.year}</span>
-      <span class="movie-badge-rating">${movie.rating}</span>
+  article.innerHTML = `
+    <div class="movie-poster">
+      <img src="${film.image}" alt="${film.imageAlt}" loading="lazy"
+           onerror="this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg,#1E40AF,#3B82F6)'" />
+      <div class="poster-overlay"></div>
+      <span class="poster-badge-year">${film.annee}</span>
+      <span class="poster-badge-rating">${film.note}</span>
     </div>
     <div class="movie-body">
-      <span class="movie-genre-tag">${movie.genre}</span>
-      <h3 class="movie-title">${movie.title}</h3>
-      <p class="movie-desc">${movie.desc}</p>
-      <div class="movie-platforms-preview" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:2px;">
-        ${platformBadges}
-      </div>
-      <button
-        class="btn-watch"
-        onclick="openMoncashModal(${movie.id})"
-        aria-label="Payer 50 HTG pour voir où regarder ${movie.title}"
-      >
-        <span class="btn-watch-logo">M</span>
-        Où regarder ? (50 HTG)
+      <span class="movie-genre">${film.genre}</span>
+      <h3 class="movie-title-text">${film.titre}</h3>
+      <p class="movie-desc">${film.desc}</p>
+      <div class="movie-platforms-preview">${pillsHTML}</div>
+      <button class="btn-watch" onclick="ouvrirModalPaiement(${film.id})"
+              aria-label="Payer 500 HTG pour voir où regarder ${film.titre}">
+        <span class="btn-watch-m" aria-hidden="true">M</span>
+        Où regarder ? (500 HTG)
       </button>
     </div>
   `;
 
-  return card;
+  return article;
 }
-
-// Assombrir légèrement une couleur hex pour le dégradé
-function adjustColor(hex) {
-  try {
-    const n = parseInt(hex.slice(1), 16);
-    const r = Math.max(0, (n >> 16) - 30);
-    const g = Math.max(0, ((n >> 8) & 0xFF) - 30);
-    const b = Math.max(0, (n & 0xFF) - 30);
-    return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
-  } catch { return hex; }
-}
-
-// Style des badges de plateforme sur les cartes
-const platformStyle = document.createElement('style');
-platformStyle.textContent = `
-  .plt-name-badge {
-    font-size: .72rem; font-weight: 700;
-    padding: 3px 9px; border-radius: 999px;
-    background: var(--blue-50); color: var(--blue-700);
-    border: 1px solid var(--blue-100);
-  }
-`;
-document.head.appendChild(platformStyle);
 
 /* ============================================================
    FILTRES & RECHERCHE
 ============================================================ */
-function handleGenreFilter(e) {
+function filtrerParGenre(e) {
   const btn = e.currentTarget;
-  state.activeGenre = btn.dataset.genre;
-  state.searchQuery = '';
-  if (dom.searchInput) dom.searchInput.value = '';
+  APP.genre = btn.dataset.genre;
+  APP.query = '';
+  if (DOM.searchInput) DOM.searchInput.value = '';
 
-  // Mise à jour des boutons actifs
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
 
-  renderMovies();
+  rendreCatalogue();
 }
 
-function handleSearch(e) {
-  state.searchQuery = e.target.value;
-  // Réinitialiser le filtre de genre lors de la recherche
-  state.activeGenre = 'all';
+function rechercherFilms(e) {
+  APP.query = e.target.value;
+  APP.genre = 'all';
+
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('filter-all')?.classList.add('active');
+  $('f-all')?.classList.add('active');
 
-  renderMovies();
+  rendreCatalogue();
 }
 
 /* ============================================================
-   MODAL MONCASH – OUVERTURE
+   MODAL MONCASH — OUVERTURE
 ============================================================ */
-function openMoncashModal(movieId) {
-  const movie = MOVIES_DB.find(m => m.id === movieId);
-  if (!movie) return;
+function ouvrirModalPaiement(filmId) {
+  const film = FILMS_DB.find(f => f.id === filmId);
+  if (!film) return;
 
-  state.selectedMovie = movie;
-  state.paymentSimulated = false;
+  // 🔒 Réinitialiser le verrou anti-fraude
+  APP.paiementValide = false;
+  APP.filmEnCours    = film;
 
-  // Remplir la modale avec les infos du film
-  dom.moncashFilmTitle.textContent = movie.title;
-  dom.moncashFilmEmoji.textContent = movie.emoji;
+  // Remplir la modale
+  DOM.mcFilmTitle.textContent  = film.titre;
+  DOM.mcFilmThumb.src          = film.image;
+  DOM.mcFilmThumb.alt          = film.imageAlt;
 
-  // Pré-remplir avec le téléphone de l'utilisateur
-  if (dom.moncashPhone && state.currentUser?.phone) {
-    dom.moncashPhone.value = state.currentUser.phone;
-  } else if (dom.moncashPhone) {
-    dom.moncashPhone.value = '';
-  }
+  // Pré-remplir numéro
+  if (DOM.mcPhone && APP.user?.tel) DOM.mcPhone.value = APP.user.tel;
+  else if (DOM.mcPhone) DOM.mcPhone.value = '';
 
-  // Réinitialiser le bouton de paiement
-  if (dom.btnPayMoncash) {
-    dom.btnPayMoncash.textContent = '';
-    const icon = document.createElement('span');
-    icon.className = 'moncash-btn-icon';
-    icon.textContent = 'M';
-    dom.btnPayMoncash.appendChild(icon);
-    dom.btnPayMoncash.appendChild(document.createTextNode(' Payer 50 HTG avec MonCash'));
-    dom.btnPayMoncash.disabled = false;
-  }
+  // Réinitialiser bouton
+  DOM.btnPay.disabled = false;
+  DOM.btnPay.innerHTML = `<span class="mc-btn-icon" aria-hidden="true">M</span> Confirmer le paiement – 500 HTG`;
 
-  // Effacer les erreurs
-  clearFieldError('err-moncash-phone');
-  if (dom.moncashPhone) dom.moncashPhone.classList.remove('error');
+  effacerErreur('err-mc-phone');
+  DOM.mcPhone?.classList.remove('input-error');
 
-  // Afficher la modale
-  dom.modalMoncash.hidden = false;
+  DOM.modalMoncash.hidden = false;
   document.body.style.overflow = 'hidden';
-
-  // Focus sur le champ téléphone
-  setTimeout(() => dom.moncashPhone?.focus(), 100);
+  setTimeout(() => DOM.mcPhone?.focus(), 120);
 }
 
 /* ============================================================
-   MODAL MONCASH – FERMETURE
+   MODAL MONCASH — FERMETURE
+   🔒 Anti-fraude : fermer la modale NE débloque PAS le lien
 ============================================================ */
-function closeMoncashModal() {
-  dom.modalMoncash.hidden = true;
+function fermerModalMoncash() {
+  DOM.modalMoncash.hidden = true;
   document.body.style.overflow = '';
+  // APP.paiementValide reste false → lien JAMAIS affiché
 }
 
 /* ============================================================
-   LOGIQUE DE PAIEMENT MONCASH (Simulation)
+   CONFIRMATION DU PAIEMENT MONCASH
 ============================================================ */
-function handleMoncashPayment() {
-  const phone = dom.moncashPhone?.value.trim() || '';
+function confirmerPaiement() {
+  const tel = DOM.mcPhone?.value.trim() || '';
+  const telNettoye = tel.replace(/\s/g, '');
 
-  // Validation du numéro
-  const cleaned = phone.replace(/\s/g, '');
-  if (!cleaned || cleaned.length < 8) {
-    showFieldError('err-moncash-phone', 'Entrez un numéro MonCash valide (8 chiffres min.).');
-    dom.moncashPhone?.classList.add('error');
-    dom.moncashPhone?.focus();
+  if (!telNettoye || telNettoye.length < 8) {
+    afficherErreur('err-mc-phone', 'Entrez votre numéro MonCash (8 chiffres min.).');
+    DOM.mcPhone?.classList.add('input-error');
+    DOM.mcPhone?.focus();
     return;
   }
-  clearFieldError('err-moncash-phone');
-  dom.moncashPhone?.classList.remove('error');
 
-  const movie = state.selectedMovie;
-  if (!movie) return;
+  effacerErreur('err-mc-phone');
+  DOM.mcPhone?.classList.remove('input-error');
 
-  // Animation du bouton (état de chargement)
-  const btn = dom.btnPayMoncash;
-  btn.innerHTML = '⏳ Traitement du paiement…';
-  btn.disabled = true;
-  btn.style.opacity = '0.8';
+  // Désactiver le bouton
+  DOM.btnPay.disabled = true;
+  DOM.btnPay.textContent = '⏳ Connexion à MonCash…';
 
-  // Construire l'URL MonCash avec paramètres pré-remplis
-  // Lien officiel MonCash Business Payment
-  const moncashPayUrl =
-    `https://moncashbutton.digicelhaiti.com/Moncash-business/Pay` +
-    `?amount=50` +
-    `&orderId=SF-${movie.id}-${Date.now()}` +
-    `&description=${encodeURIComponent('StreamFinder - Acces streaming ' + movie.title)}`;
-
-  // Ouvrir MonCash dans un nouvel onglet
-  const payWindow = window.open(moncashPayUrl, '_blank', 'noopener,noreferrer');
-
-  // Simulation de la confirmation après 3 secondes
+  // Fermer modal MonCash, ouvrir modal chargement
   setTimeout(() => {
-    closeMoncashModal();
-    showResultModal(movie);
-    state.paymentSimulated = true;
+    DOM.modalMoncash.hidden = true;
+    DOM.modalLoading.hidden = false;
+    lancerSimulationPaiement(telNettoye);
+  }, 400);
+}
+
+/* ============================================================
+   SIMULATION DE LA TRANSACTION (3 étapes animées)
+   Puis ouverture de MonCash officiel dans un nouvel onglet
+============================================================ */
+function lancerSimulationPaiement(telClient) {
+  const film = APP.filmEnCours;
+  if (!film) return;
+
+  // Réinitialiser les étapes
+  [DOM.lstep1, DOM.lstep2, DOM.lstep3].forEach(s => s?.classList.remove('done'));
+
+  // Étape 1 — Vérification numéro (1 sec)
+  setTimeout(() => {
+    DOM.lstep1.textContent = '✅ Numéro vérifié avec succès';
+    DOM.lstep1.classList.add('done');
+    DOM.loadingMsg.textContent = 'Initialisation de la transaction…';
+  }, 1000);
+
+  // Étape 2 — Initialisation transaction (2 sec)
+  setTimeout(() => {
+    DOM.lstep2.textContent = '✅ Transaction de 500 HTG initialisée';
+    DOM.lstep2.classList.add('done');
+    DOM.loadingMsg.textContent = 'Redirection vers MonCash Digicel…';
+  }, 2000);
+
+  // Étape 3 — Redirection (3 sec)
+  setTimeout(() => {
+    DOM.lstep3.textContent = '✅ Redirection effectuée !';
+    DOM.lstep3.classList.add('done');
+
+    // Construire l'URL MonCash officielle avec mon numéro marchand
+    const orderId = `SF-${film.id}-${Date.now()}`;
+    const desc    = encodeURIComponent(`StreamFinder - ${film.titre} - 500 HTG`);
+    const urlMoncash = `https://moncashbutton.digicelhaiti.com/Moncash-business/Pay?number=${MERCHANT_CONFIG.numero}&amount=${MERCHANT_CONFIG.montant}&orderId=${orderId}&description=${desc}`;
+
+    // Ouvrir MonCash dans un nouvel onglet
+    window.open(urlMoncash, '_blank', 'noopener,noreferrer');
+
+    // 🔒 Valider le verrou anti-fraude
+    APP.paiementValide = true;
+
+    // Fermer loading, afficher résultat
+    setTimeout(() => {
+      DOM.modalLoading.hidden = true;
+      afficherModalResultat(film);
+    }, 600);
+
   }, 3000);
 }
 
 /* ============================================================
-   MODAL RÉSULTAT – AFFICHAGE (Après paiement simulé)
+   MODAL RÉSULTAT — AFFICHAGE DU LIEN FILM
+   🔒 UNIQUEMENT si APP.paiementValide === true
 ============================================================ */
-function showResultModal(movie) {
-  // Mettre à jour le titre
-  dom.resultFilmName.innerHTML = `Accès débloqué pour : <strong>${movie.title}</strong>`;
+function afficherModalResultat(film) {
+  // 🔒 Vérification anti-fraude double
+  if (!APP.paiementValide) {
+    console.warn('[StreamFinder] Accès refusé : paiement non validé.');
+    afficherToast('❌ Paiement non confirmé. Le lien reste protégé.');
+    return;
+  }
 
-  // Générer les liens de plateformes officielles
-  dom.resultPlatforms.innerHTML = movie.platforms.map(p => `
-    <a
-      href="${p.url}"
-      target="_blank"
-      rel="noopener noreferrer"
-      class="result-platform-link"
-      onclick="trackClick('${p.name}', '${movie.title}')"
-    >
-      <div class="result-platform-icon" style="background:${p.color};">${p.icon}</div>
-      <div class="result-platform-details">
-        <strong>${p.name}</strong>
-        <small>Cliquez pour accéder à la plateforme officielle</small>
+  DOM.resultFilmName.textContent = film.titre;
+
+  // Générer les liens officiels
+  DOM.resultLinks.innerHTML = film.plateformes.map(p => `
+    <a href="${p.url}" target="_blank" rel="noopener noreferrer"
+       class="result-platform-btn" onclick="logClic('${p.nom}', '${film.titre}')">
+      <div class="rp-icon" style="background:${p.couleur};">${p.icone}</div>
+      <div class="rp-details">
+        <strong>${p.nom}</strong>
+        <small>Cliquer pour accéder à la plateforme officielle</small>
       </div>
-      <span class="result-arrow">→</span>
+      <span class="rp-arrow" aria-hidden="true">→</span>
     </a>
   `).join('');
 
-  // Afficher la modale
-  dom.modalResult.hidden = false;
+  DOM.modalResult.hidden = false;
   document.body.style.overflow = 'hidden';
-
-  // Notification
-  showToast(`✅ Accès débloqué pour "${movie.title}" !`);
+  afficherToast(`✅ Accès débloqué pour "${film.titre}" !`);
 }
 
 /* ============================================================
-   MODAL RÉSULTAT – FERMETURE
+   MODAL RÉSULTAT — FERMETURE
 ============================================================ */
 function closeResultModal() {
-  dom.modalResult.hidden = true;
+  DOM.modalResult.hidden = true;
   document.body.style.overflow = '';
-}
-
-/* ============================================================
-   TRACKING DES CLICS (Simulation analytique)
-============================================================ */
-function trackClick(platform, movieTitle) {
-  console.log(`[StreamFinder Analytics] Clic vers ${platform} pour "${movieTitle}"`);
-  // Ici vous pourriez intégrer Google Analytics : gtag('event', 'platform_click', {...})
+  // 🔒 Réinitialiser le verrou après fermeture
+  APP.paiementValide = false;
+  APP.filmEnCours    = null;
 }
 
 /* ============================================================
    UTILITAIRES
 ============================================================ */
 
-/** Validation email */
-function isValidEmail(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
-/** Afficher une erreur de champ */
-function showFieldError(id, message) {
-  const el = document.getElementById(id);
-  if (el) el.textContent = message;
-}
-
-/** Effacer une erreur de champ */
-function clearFieldError(id) {
-  const el = document.getElementById(id);
-  if (el) el.textContent = '';
-}
-
-/** Toast notification */
-let toastTimer = null;
-function showToast(message, duration = 3500) {
-  const toast = dom.toast;
-  if (!toast) return;
-  toast.textContent = message;
-  toast.classList.add('show');
-  if (toastTimer) clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => {
-    toast.classList.remove('show');
-  }, duration);
-}
-
-/** Formater la saisie d'un numéro de téléphone haïtien */
-function formatPhoneInput(e) {
-  let value = e.target.value.replace(/\D/g, '');
-  if (value.length > 8) value = value.slice(0, 8);
-  // Format : XX XX XX XX
+// Format téléphone haïtien : XX XX XX XX
+function formaterTel(e) {
+  let v = e.target.value.replace(/\D/g, '');
+  if (v.length > 8) v = v.slice(0, 8);
   const parts = [];
-  for (let i = 0; i < value.length; i += 2) {
-    parts.push(value.slice(i, i + 2));
-  }
+  for (let i = 0; i < v.length; i += 2) parts.push(v.slice(i, i + 2));
   e.target.value = parts.join(' ');
 }
 
-/** Debounce pour la recherche */
-function debounce(fn, delay) {
+// Afficher erreur de champ
+function afficherErreur(id, msg) {
+  const el = $(id);
+  if (el) el.textContent = msg;
+}
+
+// Effacer erreur de champ
+function effacerErreur(id) {
+  const el = $(id);
+  if (el) el.textContent = '';
+}
+
+// Toast notification
+let _toastTimer = null;
+function afficherToast(msg, duree = 3800) {
+  const t = DOM.toast;
+  if (!t) return;
+  t.textContent = msg;
+  t.classList.add('show');
+  if (_toastTimer) clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), duree);
+}
+
+// Log analytique (extensible avec Google Analytics)
+function logClic(plateforme, film) {
+  console.log(`[StreamFinder] Clic → ${plateforme} pour "${film}"`);
+  // gtag('event', 'platform_click', { platform: plateforme, movie: film });
+}
+
+// Debounce
+function debounce(fn, ms) {
   let timer;
   return function(...args) {
     clearTimeout(timer);
-    timer = setTimeout(() => fn.apply(this, args), delay);
+    timer = setTimeout(() => fn.apply(this, args), ms);
   };
 }
 
 /* ============================================================
-   LANCEMENT
+   DÉMARRAGE
 ============================================================ */
 document.addEventListener('DOMContentLoaded', init);
