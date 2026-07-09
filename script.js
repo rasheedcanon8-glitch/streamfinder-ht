@@ -12,24 +12,129 @@
 'use strict';
 
 /* ============================================================
-   CONFIGURATION DE L'API DEXCHANGE / MONCASH (Production)
+   CONFIGURATION REST API MONCASH (Sandbox / Test)
+   ⚠️ Remplacez CLIENT_ID et SECRET_KEY par vos vraies clés
+   obtenues dans votre tableau de bord MonCash Business.
 ============================================================ */
-const DEXCHANGE_CONFIG = {
-  // Mode Live / Production (Live API Credentials)
-  MERCHANT_KEY:    'VOTRE_MERCHANT_KEY_PRODUCTION_ICI', // Clé Marchand Dexchange
-  CLIENT_ID:       'VOTRE_CLIENT_ID_PRODUCTION_ICI',    // Client ID Dexchange
-  SECRET_KEY:      'VOTRE_SECRET_KEY_PRODUCTION_ICI',   // Secret Key Dexchange
-  RSA_PUBLIC_KEY:  `-----BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAv1vV...
-VOTRE_CLE_PUBLIQUE_RSA_PRODUCTION_COMPLETE_ICI
------END PUBLIC KEY-----`,
-  
-  // Compte Marchand de réception (+509 38 08 63 19)
-  MERCHANT_PHONE:  '+50938086319', 
-  API_URL:         'https://api.dexchangeout.com/api/v1', // URL de Production Dexchange
-  CURRENCY:        'HTG',
-  AMOUNT:          500
+const MONCASH_CONFIG = {
+  // 🔑 Identifiants API MonCash (à remplacer par vos clés réelles)
+  CLIENT_ID:      'METTRE_MON_CLIENT_ID_ICI',
+  SECRET_KEY:     'METTRE_MA_SECRET_KEY_ICI',
+
+  // 🌐 URLs REST API MonCash Sandbox (Mode Test)
+  API_BASE:       'https://sandbox.moncashbutton.digicelgroup.com/Api',
+  GATEWAY_BASE:   'https://sandbox.moncashbutton.digicelgroup.com/Moncash-middleware',
+
+  // 📱 Compte Marchand de réception (+509 38 08 63 19)
+  MERCHANT_PHONE: '+50938086319',
+  CURRENCY:       'HTG',
+  AMOUNT:         500,
+
+  // 🔗 URL de retour après paiement (votre site GitHub Pages)
+  RETURN_URL:     'https://rasheedcanon8-glitch.github.io/streamfinder-ht/'
 };
+
+/* ============================================================
+   FONCTIONS REST API MONCASH
+============================================================ */
+
+/**
+ * ÉTAPE 1 : Obtenir un Token d'accès OAuth
+ * Envoie une requête POST vers /oauth/token avec Basic Auth
+ * (Client ID + Secret Key encodés en Base64)
+ */
+async function obtenirToken() {
+  const credentials = btoa(`${MONCASH_CONFIG.CLIENT_ID}:${MONCASH_CONFIG.SECRET_KEY}`);
+
+  const response = await fetch(`${MONCASH_CONFIG.API_BASE}/oauth/token`, {
+    method: 'POST',
+    headers: {
+      'Accept':        'application/json',
+      'Authorization': `Basic ${credentials}`,
+      'Content-Type':  'application/x-www-form-urlencoded'
+    },
+    body: 'scope=read,write&grant_type=client_credentials'
+  });
+
+  if (!response.ok) {
+    throw new Error(`Erreur d'authentification MonCash (${response.status})`);
+  }
+
+  const data = await response.json();
+  console.log('[MonCash] Token obtenu avec succès');
+  return data.access_token;
+}
+
+/**
+ * ÉTAPE 2 : Créer une Transaction de Paiement (500 HTG)
+ * Envoie une requête POST vers /v1/CreatePayment
+ * Retourne le payment_token pour rediriger l'utilisateur
+ */
+async function creerPaiement(filmId) {
+  const token = await obtenirToken();
+  const orderId = `SF-${filmId}-${Date.now()}`;
+
+  const response = await fetch(`${MONCASH_CONFIG.API_BASE}/v1/CreatePayment`, {
+    method: 'POST',
+    headers: {
+      'Accept':        'application/json',
+      'Authorization': `Bearer ${token}`,
+      'Content-Type':  'application/json'
+    },
+    body: JSON.stringify({
+      amount:  MONCASH_CONFIG.AMOUNT,
+      orderId: orderId
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`Erreur création paiement MonCash (${response.status})`);
+  }
+
+  const data = await response.json();
+  console.log('[MonCash] Paiement créé, token de redirection obtenu');
+  return data.payment_token;
+}
+
+/**
+ * ÉTAPE 3 : Rediriger vers le portail de paiement MonCash
+ * Utilise le payment_token pour envoyer l'utilisateur sur la page
+ * sécurisée de la Digicel où il entre son code PIN.
+ * Cela évite toute erreur d'IP car le paiement se fait chez Digicel.
+ */
+function redirectionMoncash(paymentToken) {
+  const urlPaiement = `${MONCASH_CONFIG.GATEWAY_BASE}/Payment/Redirect?token=${paymentToken}`;
+  console.log('[MonCash] Redirection vers:', urlPaiement);
+  window.location.href = urlPaiement;
+}
+
+/**
+ * ÉTAPE 4 : Vérifier une transaction (Anti-Fraude)
+ * Vérifie le statut d'une transaction via son orderId
+ */
+async function verifierTransaction(orderId) {
+  try {
+    const token = await obtenirToken();
+
+    const response = await fetch(`${MONCASH_CONFIG.API_BASE}/v1/RetrieveOrderPayment`, {
+      method: 'POST',
+      headers: {
+        'Accept':        'application/json',
+        'Authorization': `Bearer ${token}`,
+        'Content-Type':  'application/json'
+      },
+      body: JSON.stringify({ orderId: orderId })
+    });
+
+    if (!response.ok) return false;
+
+    const data = await response.json();
+    return data.payment && data.payment.message === 'successful';
+  } catch (err) {
+    console.warn('[MonCash] Vérification échouée:', err.message);
+    return false;
+  }
+}
 
 /* ============================================================
    BASE DE DONNÉES FILMS
@@ -608,35 +713,58 @@ function confirmerPaiement() {
 
   // Désactiver le bouton
   DOM.btnPay.disabled = true;
-  DOM.btnPay.textContent = '⏳ Redirection vers MonCash...';
+  DOM.btnPay.textContent = '⏳ Connexion à MonCash...';
 
   // Fermer modal MonCash, ouvrir modal chargement
-  setTimeout(() => {
+  setTimeout(async () => {
     DOM.modalMoncash.hidden = true;
     DOM.modalLoading.hidden = false;
     
     if (DOM.lstep1) { DOM.lstep1.textContent = "✅ Numéro client validé (+509 " + telNettoye + ")"; DOM.lstep1.classList.add('done'); }
-    if (DOM.lstep2) { DOM.lstep2.textContent = "✅ Génération du lien MonCash sécurisé"; DOM.lstep2.classList.add('done'); }
-    DOM.loadingMsg.textContent = "Connexion sécurisée en cours...";
+    DOM.loadingMsg.textContent = "Connexion sécurisée à l'API MonCash...";
 
-    setTimeout(() => {
+    try {
+      // ═══════════════════════════════════════════
+      // FLUX REST API OFFICIEL MONCASH
+      // ═══════════════════════════════════════════
+
+      // ÉTAPE 1 : Obtenir le Token d'accès OAuth
+      if (DOM.lstep2) { DOM.lstep2.textContent = "⏳ Authentification auprès de MonCash..."; }
+      const paymentToken = await creerPaiement(film.id);
+      if (DOM.lstep2) { DOM.lstep2.textContent = "✅ Paiement de 500 HTG créé avec succès"; DOM.lstep2.classList.add('done'); }
+
+      // ÉTAPE 2 : Sauvegarder l'info du film pour le retour
+      sessionStorage.setItem('sf_pending_film', JSON.stringify({ id: film.id, titre: film.titre }));
+
+      // ÉTAPE 3 : Redirection vers la page de paiement sécurisée Digicel
       if (DOM.lstep3) { DOM.lstep3.textContent = "✅ Redirection vers Digicel..."; DOM.lstep3.classList.add('done'); }
       
-      // ID unique pour identifier la commande
-      const orderId = `SF-${film.id}-${Date.now()}`;
-      const desc = encodeURIComponent(`StreamFinder - ${film.titre} - 500 HTG`);
-      
-      // URL de retour vers notre site (GitHub Pages) après le paiement pour déverrouiller le film
-      const currentUrl = window.location.origin + window.location.pathname;
-      const returnUrl = encodeURIComponent(`${currentUrl}?status=success&film_id=${film.id}`);
-      
-      // Redirection directe vers le portail officiel MonCash Digicel (Bypasse l'erreur IP)
-      // Numéro Marchand : +509 38 08 63 19, Montant : 500 HTG
-      const urlMoncash = `https://moncashbutton.digicelhaiti.com/Moncash-business/Pay?number=38086319&amount=500&orderId=${orderId}&description=${desc}&returnUrl=${returnUrl}`;
+      setTimeout(() => {
+        redirectionMoncash(paymentToken);
+      }, 800);
 
-      // Redirection immédiate
-      window.location.href = urlMoncash;
-    }, 1500);
+    } catch (err) {
+      console.warn('[MonCash] Erreur API REST:', err.message);
+      console.log('[MonCash] Utilisation du mode redirection directe (fallback)...');
+
+      // ═══════════════════════════════════════════
+      // FALLBACK : Redirection directe si l'API REST
+      // échoue (ex: CORS sur GitHub Pages)
+      // ═══════════════════════════════════════════
+      if (DOM.lstep2) { DOM.lstep2.textContent = "✅ Préparation du paiement sécurisé"; DOM.lstep2.classList.add('done'); }
+
+      setTimeout(() => {
+        if (DOM.lstep3) { DOM.lstep3.textContent = "✅ Redirection vers Digicel..."; DOM.lstep3.classList.add('done'); }
+
+        const orderId = `SF-${film.id}-${Date.now()}`;
+        const returnUrl = encodeURIComponent(`${MONCASH_CONFIG.RETURN_URL}?status=success&film_id=${film.id}`);
+        
+        // Redirection directe vers MonCash Sandbox (contourne les erreurs CORS/IP)
+        const urlMoncash = `${MONCASH_CONFIG.GATEWAY_BASE}/Payment/Redirect?orderId=${orderId}&amount=${MONCASH_CONFIG.AMOUNT}&returnUrl=${returnUrl}`;
+        
+        window.location.href = urlMoncash;
+      }, 1000);
+    }
 
   }, 400);
 }
